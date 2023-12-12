@@ -1,0 +1,25 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <!--
+    PackageId Microsoft.Azure.DurableTask.Emulator
+    -->
+    <!--NuGet licenseUrl and PackageIconUrl/iconUrl deprecation. -->
+    <NoWarn>NU5125;NU5048</NoWarn>
+    <RootNamespace>Orleans.DurableTask.Emulator</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Brimborium.DurableOrleans.Core\Brimborium.DurableOrleans.Core.csproj" />
+  </ItemGroup>
+  <!--
+  <ItemGroup Condition="'$(Configuration)'=='Release'">
+    <Content Include="..\..\_manifest\**">
+      <Pack>true</Pack>
+      <PackagePath>content/SBOM</PackagePath>
+    </Content>
+  </ItemGroup>
+  -->
+</Project>

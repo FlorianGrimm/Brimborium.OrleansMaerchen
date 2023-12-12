@@ -1,0 +1,26 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>Orleans.DurableTask.Core.Tests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="EnterpriseLibrary.SemanticLogging.EventSourceAnalyzer.NetCore" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="MSTest.TestAdapter" />
+    <PackageReference Include="MSTest.TestFramework" />
+    <PackageReference Include="Newtonsoft.Json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Brimborium.DurableOrleans.Core\Brimborium.DurableOrleans.Core.csproj" />
+    <ProjectReference Include="..\Brimborium.DurableOrleans.Emulator\Brimborium.DurableOrleans.Emulator.csproj" />
+    <ProjectReference Include="..\Brimborium.DurableOrleans.Test.Orchestrations\Brimborium.DurableOrleans.Test.Orchestrations.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Service Include="{82a7f48d-3b50-4b1e-b82e-3ada8210c358}" />
+  </ItemGroup>
+
+</Project>

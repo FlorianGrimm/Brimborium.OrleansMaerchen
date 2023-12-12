@@ -1,0 +1,93 @@
+﻿//  ----------------------------------------------------------------------------------
+//  Copyright Microsoft Corporation
+//  Licensed under the Apache License, Version 2.0 (the "License");
+//  you may not use this file except in compliance with the License.
+//  You may obtain a copy of the License at
+//  http://www.apache.org/licenses/LICENSE-2.0
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the License is distributed on an "AS IS" BASIS,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the License for the specific language governing permissions and
+//  limitations under the License.
+//  ----------------------------------------------------------------------------------
+
+namespace Orleans.DurableTask.Core.History;
+
+/// <summary>
+/// Base class for history events
+/// </summary>
+[DataContract]
+[KnownType(nameof(KnownTypes))]
+[GenerateSerializer]
+[Alias("HistoryEvent")]
+public abstract class HistoryEvent : IExtensibleDataObject {
+    private static IReadOnlyCollection<Type>? knownTypes;
+
+    /// <summary>
+    /// List of all event classes, for use by the DataContractSerializer
+    /// </summary>
+    /// <returns>An enumerable of all known types that implement <see cref="HistoryEvent"/>.</returns>
+    public static IEnumerable<Type> KnownTypes() {
+        if (knownTypes != null) {
+            return knownTypes;
+        }
+
+        knownTypes = typeof(HistoryEvent).Assembly
+            .GetTypes()
+            .Where(x => !x.IsAbstract && typeof(HistoryEvent).IsAssignableFrom(x))
+            .ToList()
+            .AsReadOnly();
+
+        return knownTypes;
+    }
+
+    /// <summary>
+    /// Creates a new history event
+    /// </summary>
+    internal HistoryEvent() {
+        this.Timestamp = DateTime.UtcNow;
+    }
+
+    /// <summary>
+    /// Creates a new history event with the supplied event id
+    /// </summary>
+    /// <param name="eventId">The integer event id</param>
+    protected HistoryEvent(int eventId) {
+        this.EventId = eventId;
+        this.Timestamp = DateTime.UtcNow;
+    }
+
+    /// <summary>
+    /// Gets the event id
+    /// </summary>
+    [DataMember]
+    [Id(0)]
+    public int EventId { get; internal set; }
+
+    /// <summary>
+    /// Gets the IsPlayed status
+    /// </summary>
+    [DataMember]
+    [Id(1)]
+    public bool IsPlayed { get; set; }
+
+    /// <summary>
+    /// Gets the event timestamp
+    /// </summary>
+    [DataMember]
+    [Id(2)]
+    public DateTime Timestamp { get; set; }
+
+    /// <summary>
+    /// Gets the event type
+    /// </summary>
+    [DataMember]
+    [Id(3)]
+    public virtual EventType EventType { get; private set; }
+
+    /// <summary>
+    /// Implementation for <see cref="IExtensibleDataObject.ExtensionData"/>.
+    /// </summary>
+    [Id(4)]
+    public ExtensionDataObject? ExtensionData { get; set; }
+}

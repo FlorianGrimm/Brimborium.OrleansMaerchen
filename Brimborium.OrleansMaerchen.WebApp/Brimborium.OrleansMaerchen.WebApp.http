@@ -1,0 +1,23 @@
+@Brimborium.OrleansMaerchen.WebApp_HostAddress = http://localhost:5221
+
+GET {{Brimborium.OrleansMaerchen.WebApp_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
+
+
+GET {{Brimborium.OrleansMaerchen.WebApp_HostAddress}}/todo/ac1f8ea1-9c07-4cff-aedd-f854479f2e39
+Accept: application/json
+
+###
+
+POST {{Brimborium.OrleansMaerchen.WebApp_HostAddress}}/todo/ac1f8ea1-9c07-4cff-aedd-f854479f2e39
+Accept: application/json
+Content-Type: application/json;charset=utf-8
+
+{
+  "todoId": "ac1f8ea1-9c07-4cff-aedd-f854479f2e39",
+  "name": "string",
+  "done": true
+}
+###

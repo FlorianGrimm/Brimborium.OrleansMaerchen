@@ -396,3 +396,6 @@ FodyWeavers.xsd
 
 # JetBrains Rider
 *.sln.iml
+
+Brimborium.OrleansMaerchen.NBomber/reports/
+Brimborium.OrleansMaerchen.WebApp/Data/

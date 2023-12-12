@@ -1,0 +1,35 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="Microsoft.Orleans.TestingHost" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Brimborium.DurableOrleans.Core\Brimborium.DurableOrleans.Core.csproj" />
+    <ProjectReference Include="..\Brimborium.DurableOrleans.Hosting\Brimborium.DurableOrleans.Hosting.csproj" />
+    <ProjectReference Include="..\Brimborium.Orleans.FileStrorage\Brimborium.Orleans.FileStrorage.csproj" />
+    <ProjectReference Include="..\Brimborium.OrleansMaerchen.Contracts\Brimborium.OrleansMaerchen.Contracts.csproj" />
+    <ProjectReference Include="..\Brimborium.OrleansMaerchen.Grains\Brimborium.OrleansMaerchen.Grains.csproj" />
+    <ProjectReference Include="..\Brimborium.ReturnValue\Brimborium.ReturnValue.csproj" />
+  </ItemGroup>
+
+</Project>
