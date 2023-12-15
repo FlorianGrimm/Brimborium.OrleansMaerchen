@@ -17,8 +17,6 @@
 
 namespace Brimborium.OrleansAmqp.Framing;
 
-using Brimborium.OrleansAmqp.Types;
-
 /// <summary>
 /// The header section carries standard delivery details about the transfer of a
 /// Message through the AMQP network.
@@ -104,7 +102,7 @@ public sealed class Header : DescribedList
                 AmqpEncoder.WriteUInt(buffer, this.deliveryCount, true);
                 break;
             default:
-                Fx.Assert(false, "Invalid field index");
+                AssertException.Assert(false, "Invalid field index");
                 break;
         }
     }
@@ -129,7 +127,7 @@ public sealed class Header : DescribedList
                 this.deliveryCount = AmqpEncoder.ReadUInt(buffer, formatCode);
                 break;
             default:
-                Fx.Assert(false, "Invalid field index");
+                AssertException.Assert(false, "Invalid field index");
                 break;
         }
     }

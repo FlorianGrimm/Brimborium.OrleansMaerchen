@@ -17,15 +17,10 @@
 
 namespace Brimborium.OrleansAmqp;
 
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-
 /// <summary>
 /// Provides asynchronous I/O calls.
 /// </summary>
-public interface IAsyncTransport : ITransport
-{
+public interface IAsyncTransport : ITransport {
     /// <summary>
     /// Sets a connection to the transport.
     /// </summary>

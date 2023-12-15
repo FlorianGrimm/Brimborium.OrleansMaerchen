@@ -24,3 +24,5 @@ global using Brimborium.OrleansAmqp.Sasl;
 global using Brimborium.OrleansAmqp.Serialization;
 global using Brimborium.OrleansAmqp.Transactions;
 global using Brimborium.OrleansAmqp.Types;
+
+global using Brimborium.ReturnValue;

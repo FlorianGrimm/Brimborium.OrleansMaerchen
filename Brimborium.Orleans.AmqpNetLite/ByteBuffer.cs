@@ -175,8 +175,8 @@ public class ByteBuffer {
     /// </summary>
     /// <param name="size">Size to advance.</param>
     public void Append(int size) {
-        Fx.Assert(size >= 0, "size must be positive.");
-        Fx.Assert((this.write + size) <= this.end, "Append size too large.");
+        AssertException.Assert(size >= 0, "size must be positive.");
+        AssertException.Assert((this.write + size) <= this.end, "Append size too large.");
         this.write += size;
     }
 
@@ -185,8 +185,8 @@ public class ByteBuffer {
     /// </summary>
     /// <param name="size">Size to advance.</param>
     public void Complete(int size) {
-        Fx.Assert(size >= 0, "size must be positive.");
-        Fx.Assert((this.read + size) <= this.write, "Complete size too large.");
+        AssertException.Assert(size >= 0, "size must be positive.");
+        AssertException.Assert((this.read + size) <= this.write, "Complete size too large.");
         this.read += size;
     }
 
@@ -195,8 +195,8 @@ public class ByteBuffer {
     /// </summary>
     /// <param name="seekPosition">The position relative to <see cref="Offset"/> of the buffer.</param>
     public void Seek(int seekPosition) {
-        Fx.Assert(seekPosition >= 0, "seekPosition must not be negative.");
-        Fx.Assert((this.start + seekPosition) <= this.write, "seekPosition too large.");
+        AssertException.Assert(seekPosition >= 0, "seekPosition must not be negative.");
+        AssertException.Assert((this.start + seekPosition) <= this.write, "seekPosition too large.");
         this.read = this.start + seekPosition;
     }
 
@@ -205,7 +205,7 @@ public class ByteBuffer {
     /// </summary>
     /// <param name="size"></param>
     public void Shrink(int size) {
-        Fx.Assert(size >= 0 && size <= this.Length, "size must be positive and not greater then length.");
+        AssertException.Assert(size >= 0 && size <= this.Length, "size must be positive and not greater then length.");
         this.write -= size;
     }
 
@@ -223,8 +223,8 @@ public class ByteBuffer {
     /// <param name="offset">Read position to set.</param>
     /// <param name="length">Length from read position to set the write position.</param>
     public void AdjustPosition(int offset, int length) {
-        Fx.Assert(offset >= this.start, "Invalid offset!");
-        Fx.Assert(offset + length <= this.end, "length too large!");
+        AssertException.Assert(offset >= this.start, "Invalid offset!");
+        AssertException.Assert(offset + length <= this.end, "length too large!");
         this.read = offset;
         this.write = this.read + length;
     }

@@ -15,6 +15,8 @@
 //  limitations under the License.
 //  ------------------------------------------------------------------------------------
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace Brimborium.OrleansAmqp;
 
 /// <summary>

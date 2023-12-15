@@ -78,7 +78,7 @@ public class SaslInit : DescribedList
                 AmqpEncoder.WriteString(buffer, this.hostName, true);
                 break;
             default:
-                Fx.Assert(false, "Invalid field index");
+                AssertException.Assert(false, "Invalid field index");
                 break;
         }
     }
@@ -97,7 +97,7 @@ public class SaslInit : DescribedList
                 this.hostName = AmqpEncoder.ReadString(buffer, formatCode);
                 break;
             default:
-                Fx.Assert(false, "Invalid field index");
+                AssertException.Assert(false, "Invalid field index");
                 break;
         }
     }

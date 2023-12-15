@@ -702,7 +702,7 @@ public static class AmqpEncoder {
             AmqpBitConverter.WriteUByte(buffer, FormatCode.Null);
         } else {
             int count = value.Length;
-            Fx.Assert(count > 0, "must have at least 1 element in array");
+            AssertException.Assert(count > 0, "must have at least 1 element in array");
             int pos = buffer.WritePos;
             AmqpBitConverter.WriteUByte(buffer, 0);
             AmqpBitConverter.WriteUInt(buffer, 0);
@@ -808,7 +808,7 @@ public static class AmqpEncoder {
     /// <param name="buffer">The buffer to read.</param>
     /// <param name="formatCode">The format code of the value.</param>
     public static object ReadDescribed(ByteBuffer buffer, byte formatCode) {
-        Fx.Assert(formatCode == FormatCode.Described, "Format code must be described (0)");
+        AssertException.Assert(formatCode == FormatCode.Described, "Format code must be described (0)");
         Described described;
 
         CreateDescribed create = null;

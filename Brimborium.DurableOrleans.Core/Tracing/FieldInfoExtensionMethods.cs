@@ -11,9 +11,7 @@
 //  limitations under the License.
 //  ----------------------------------------------------------------------------------
 
-using System;
 using System.Linq.Expressions;
-using System.Reflection;
 
 namespace Orleans.DurableTask.Core.Tracing;
 

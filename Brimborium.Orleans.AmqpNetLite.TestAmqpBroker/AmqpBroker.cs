@@ -369,7 +369,7 @@ public sealed class TestAmqpBroker : IContainer {
         }
 
         private void Enqueue(BrokerMessage message) {
-            LinkedListNode<BrokerMessage>? node = null;
+            LinkedListNode<BrokerMessage>? nodeToDeliver = null;
             if (message.Format == BatchFormat) {
                 var batch = Message.Decode(message.Buffer);
                 if (batch.BodySection is DataList dataList) {
@@ -377,8 +377,8 @@ public sealed class TestAmqpBroker : IContainer {
                         var msg = new BrokerMessage(dataList[i].Buffer);
                         lock (this._SyncRoot) {
                             msg.Node = this._Messages.AddLast(msg);
-                            if (node == null) {
-                                node = msg.Node;
+                            if (nodeToDeliver == null) {
+                                nodeToDeliver = msg.Node;
                             }
                         }
                     }
@@ -386,7 +386,7 @@ public sealed class TestAmqpBroker : IContainer {
                     if (batch.BodySection is Data data) {
                         var msg = new BrokerMessage(data.Buffer);
                         lock (this._SyncRoot) {
-                            node = msg.Node = this._Messages.AddLast(msg);
+                            nodeToDeliver = msg.Node = this._Messages.AddLast(msg);
                         }
                     } else {
                         // Ignore it for now
@@ -397,10 +397,10 @@ public sealed class TestAmqpBroker : IContainer {
                 // clone the message as the incoming one is associated with a delivery already
                 BrokerMessage clone = new BrokerMessage(message.Buffer);
                 lock (this._SyncRoot) {
-                    node = clone.Node = this._Messages.AddLast(clone);
+                    nodeToDeliver = clone.Node = this._Messages.AddLast(clone);
                 }
             }
-            this.Deliver(node);
+            this.Deliver(nodeToDeliver);
         }
 
         private void Deliver(LinkedListNode<BrokerMessage>? node) {
@@ -613,11 +613,11 @@ public sealed class TestAmqpBroker : IContainer {
             }
 
             private static void OnCredit(int credit, Fields properties, object state) {
-                var thisPtr = (Consumer)state;
-                thisPtr._Queue.Dequeue(thisPtr, credit, thisPtr._Link.IsDraining);
-                if (thisPtr._Link.IsDraining) {
-                    thisPtr.Credit = 0;
-                    thisPtr._Link.CompleteDrain();
+                var consumer = (Consumer)state;
+                consumer._Queue.Dequeue(consumer, credit, consumer._Link.IsDraining);
+                if (consumer._Link.IsDraining) {
+                    consumer.Credit = 0;
+                    consumer._Link.CompleteDrain();
                 }
             }
 

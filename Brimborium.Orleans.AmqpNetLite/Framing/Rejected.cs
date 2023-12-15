@@ -51,7 +51,7 @@ public sealed class Rejected : Outcome
                 AmqpEncoder.WriteObject(buffer, this.error);
                 break;
             default:
-                Fx.Assert(false, "Invalid field index");
+                AssertException.Assert(false, "Invalid field index");
                 break;
         }
     }
@@ -64,7 +64,7 @@ public sealed class Rejected : Outcome
                 this.error = (Error)AmqpEncoder.ReadObject(buffer, formatCode);
                 break;
             default:
-                Fx.Assert(false, "Invalid field index");
+                AssertException.Assert(false, "Invalid field index");
                 break;
         }
     }

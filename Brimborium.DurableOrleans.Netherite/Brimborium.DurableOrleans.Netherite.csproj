@@ -1,0 +1,61 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>annotations</Nullable>
+	<RootNamespace>Orleans.DurableTask.Netherite</RootNamespace>
+	<AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="Connections\CredentialShim.cs" />
+    <Compile Remove="Scaling\AzureBlobLoadPublisher.cs" />
+    <Compile Remove="StorageLayer\Faster\AzureBlobs\AzureStorageDevice.cs" />
+    <Compile Remove="TransportLayer\EventHubs\BlobBatchReceiver.cs" />
+    <Compile Remove="TransportLayer\EventHubs\BlobBatchSender.cs" />
+    <Compile Remove="TransportLayer\EventHubs\EventHubsClientSender.cs" />
+    <Compile Remove="TransportLayer\EventHubs\EventHubsConnections.cs" />
+    <Compile Remove="TransportLayer\EventHubs\EventHubsProcessor.cs" />
+    <Compile Remove="TransportLayer\EventHubs\EventHubsSender.cs" />
+    <Compile Remove="TransportLayer\EventHubs\EventHubsTraceHelper.cs" />
+    <Compile Remove="TransportLayer\EventHubs\EventHubsTransport.cs" />
+    <Compile Remove="TransportLayer\EventHubs\LoadMonitorProcessor.cs" />
+    <Compile Remove="TransportLayer\EventHubs\LoadMonitorSender.cs" />
+    <Compile Remove="TransportLayer\EventHubs\PartitionScript.cs" />
+    <Compile Remove="TransportLayer\EventHubs\ScriptedEventProcessorHost.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="Connections\CredentialShim.cs" />
+    <None Include="Scaling\AzureBlobLoadPublisher.cs" />
+    <None Include="StorageLayer\Faster\AzureBlobs\AzureStorageDevice.cs" />
+    <None Include="TransportLayer\EventHubs\BlobBatchReceiver.cs" />
+    <None Include="TransportLayer\EventHubs\BlobBatchSender.cs" />
+    <None Include="TransportLayer\EventHubs\EventHubsClientSender.cs" />
+    <None Include="TransportLayer\EventHubs\EventHubsConnections.cs" />
+    <None Include="TransportLayer\EventHubs\EventHubsProcessor.cs" />
+    <None Include="TransportLayer\EventHubs\EventHubsSender.cs" />
+    <None Include="TransportLayer\EventHubs\EventHubsTraceHelper.cs" />
+    <None Include="TransportLayer\EventHubs\EventHubsTransport.cs" />
+    <None Include="TransportLayer\EventHubs\LoadMonitorProcessor.cs" />
+    <None Include="TransportLayer\EventHubs\LoadMonitorSender.cs" />
+    <None Include="TransportLayer\EventHubs\PartitionScript.cs" />
+    <None Include="TransportLayer\EventHubs\ScriptedEventProcessorHost.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Azure.Core" />
+    <PackageReference Include="Azure.Data.Tables" />
+    <PackageReference Include="Azure.Messaging.EventHubs" />
+    <PackageReference Include="Azure.Messaging.EventHubs.Processor" />
+    <PackageReference Include="Azure.Storage.Blobs" />
+    <PackageReference Include="Microsoft.FASTER.Core" />
+    <PackageReference Include="System.Threading.Channels" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Brimborium.DurableOrleans.Core\Brimborium.DurableOrleans.Core.csproj" />
+  </ItemGroup>
+
+</Project>

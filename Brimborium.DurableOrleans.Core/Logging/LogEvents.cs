@@ -877,8 +877,7 @@ internal static class LogEvents {
             this.Name = taskScheduledEvent.Name;
             this.TaskEventId = taskScheduledEvent.EventId;
             this.InstanceId = instance.InstanceId;
-#warning TODO:!
-            this.ExecutionId = instance.ExecutionId!;
+            this.ExecutionId = instance.ExecutionId ?? string.Empty;
             this.SizeInBytes = Encoding.UTF8.GetByteCount(taskScheduledEvent.Input ?? string.Empty);
         }
 
@@ -927,8 +926,7 @@ internal static class LogEvents {
             TimerCreatedEvent timerEvent,
             bool isInternal) {
             this.InstanceId = instance.InstanceId;
-#warning TODO:!
-            this.ExecutionId = instance.ExecutionId!;
+            this.ExecutionId = instance.ExecutionId ?? string.Empty;
             this.FireAt = timerEvent.FireAt;
             this.TaskEventId = timerEvent.EventId;
             this.IsInternal = isInternal;
@@ -977,13 +975,10 @@ internal static class LogEvents {
         public OrchestrationCompleted(
             OrchestrationRuntimeState runtimeState,
             OrchestrationCompleteOrchestratorAction action) {
-#warning TODO:!
-            this.InstanceId = runtimeState.OrchestrationInstance!.InstanceId!;
-#warning TODO:!
-            this.ExecutionId = runtimeState.OrchestrationInstance.ExecutionId!;
+            this.InstanceId = runtimeState.OrchestrationInstance!.InstanceId ?? string.Empty;
+            this.ExecutionId = runtimeState.OrchestrationInstance.ExecutionId ?? string.Empty;
             this.RuntimeStatus = action.OrchestrationStatus.ToString();
-#warning TODO:!
-            this.Details = action.Details!;
+            this.Details = action.Details ?? string.Empty;
             this.SizeInBytes = Encoding.UTF8.GetByteCount(action.Result ?? string.Empty);
         }
 
@@ -1028,8 +1023,7 @@ internal static class LogEvents {
     internal class OrchestrationAborted : StructuredLogEvent, IEventSourceEvent {
         public OrchestrationAborted(OrchestrationInstance instance, string reason) {
             this.InstanceId = instance.InstanceId;
-#warning TODO:!
-            this.ExecutionId = instance.ExecutionId!;
+            this.ExecutionId = instance.ExecutionId ?? string.Empty;
             this.Details = reason;
         }
 
@@ -1112,10 +1106,8 @@ internal static class LogEvents {
     /// </summary>
     internal class EntityBatchExecuting : StructuredLogEvent, IEventSourceEvent {
         public EntityBatchExecuting(EntityBatchRequest request) {
-#warning TODO:!
-            this.InstanceId = request.InstanceId!;
-#warning TODO:!
-            this.OperationCount = request.Operations!.Count;
+            this.InstanceId = request.InstanceId ?? string.Empty;
+            this.OperationCount = request.Operations?.Count ?? 0;
             this.EntityStateLength = request.EntityState?.Length ?? 0;
         }
 
@@ -1151,15 +1143,11 @@ internal static class LogEvents {
     /// </summary>
     internal class EntityBatchExecuted : StructuredLogEvent, IEventSourceEvent {
         public EntityBatchExecuted(EntityBatchRequest request, EntityBatchResult result) {
-#warning TODO:!
-            this.InstanceId = request.InstanceId!;
-#warning TODO:!
-            this.OperationCount = request.Operations!.Count;
-#warning TODO:!
-            this.ResultCount = result.Results!.Count;
+            this.InstanceId = request.InstanceId ?? string.Empty;
+            this.OperationCount = request.Operations?.Count ?? 0;
+            this.ResultCount = result.Results?.Count ?? 0;
             this.ErrorCount = result.Results.Count(x => x.IsError);
-#warning TODO:!
-            this.ActionCount = result.Actions!.Count;
+            this.ActionCount = result.Actions?.Count ?? 0;
             this.EntityStateLength = request.EntityState?.Length ?? 0;
         }
 
@@ -1208,9 +1196,8 @@ internal static class LogEvents {
     internal class EntityLockAcquired : StructuredLogEvent, IEventSourceEvent {
         public EntityLockAcquired(string entityId, Core.Entities.EventFormat.RequestMessage message) {
             this.EntityId = entityId;
-#warning TODO:!
-            this.InstanceId = message.ParentInstanceId!;
-            this.ExecutionId = message.ParentExecutionId!;
+            this.InstanceId = message.ParentInstanceId ?? string.Empty;
+            this.ExecutionId = message.ParentExecutionId ?? string.Empty;
             this.CriticalSectionId = message.Id;
             this.Position = message.Position;
 
@@ -1282,10 +1269,8 @@ internal static class LogEvents {
     internal class EntityLockReleased : StructuredLogEvent, IEventSourceEvent {
         public EntityLockReleased(string entityId, Core.Entities.EventFormat.ReleaseMessage message) {
             this.EntityId = entityId;
-#warning TODO:!
-            this.InstanceId = message.ParentInstanceId!;
-#warning TODO:!
-            this.CriticalSectionId = message.Id!;
+            this.InstanceId = message.ParentInstanceId ?? string.Empty;
+            this.CriticalSectionId = message.Id ?? string.Empty;
         }
 
         /// <summary>
@@ -1330,10 +1315,8 @@ internal static class LogEvents {
     internal class TaskActivityStarting : StructuredLogEvent, IEventSourceEvent {
         public TaskActivityStarting(OrchestrationInstance instance, TaskScheduledEvent taskEvent) {
             this.InstanceId = instance.InstanceId;
-#warning TODO:!
-            this.ExecutionId = instance.ExecutionId!;
-#warning TODO:!
-            this.Name = taskEvent.Name!;
+            this.ExecutionId = instance.ExecutionId ?? string.Empty;
+            this.Name = taskEvent.Name ?? string.Empty;
             this.TaskEventId = taskEvent.EventId;
         }
 
@@ -1377,8 +1360,7 @@ internal static class LogEvents {
             string name,
             TaskCompletedEvent taskEvent) {
             this.InstanceId = instance.InstanceId;
-#warning TODO:!
-            this.ExecutionId = instance.ExecutionId!;
+            this.ExecutionId = instance.ExecutionId ?? string.Empty;
             this.Name = name;
             this.TaskEventId = taskEvent.TaskScheduledId;
             this.SizeInBytes = Encoding.UTF8.GetByteCount(taskEvent.Result ?? string.Empty);
@@ -1428,8 +1410,7 @@ internal static class LogEvents {
             TaskFailedEvent taskEvent,
             Exception exception) {
             this.InstanceId = instance.InstanceId;
-#warning TODO:!
-            this.ExecutionId = instance.ExecutionId!;
+            this.ExecutionId = instance.ExecutionId ?? string.Empty;
             this.Name = name;
             this.TaskEventId = taskEvent.EventId;
             this.Details = exception.ToString();
@@ -1474,10 +1455,8 @@ internal static class LogEvents {
     internal class TaskActivityAborted : StructuredLogEvent, IEventSourceEvent {
         public TaskActivityAborted(OrchestrationInstance instance, TaskScheduledEvent taskEvent, string details) {
             this.InstanceId = instance.InstanceId;
-#warning TODO:!
-            this.ExecutionId = instance.ExecutionId!;
-#warning TODO:!
-            this.Name = taskEvent.Name!;
+            this.ExecutionId = instance.ExecutionId ?? string.Empty;
+            this.Name = taskEvent.Name ?? string.Empty;
             this.TaskEventId = taskEvent.EventId;
             this.Details = details;
         }
@@ -1554,11 +1533,9 @@ internal static class LogEvents {
     internal class RenewActivityMessageStarting : StructuredLogEvent, IEventSourceEvent {
         public RenewActivityMessageStarting(TaskActivityWorkItem workItem) {
             this.InstanceId = workItem.TaskMessage.OrchestrationInstance.InstanceId;
-#warning TODO:!
-            this.ExecutionId = workItem.TaskMessage.OrchestrationInstance.ExecutionId!;
+            this.ExecutionId = workItem.TaskMessage.OrchestrationInstance.ExecutionId ?? string.Empty;
             var taskEvent = (TaskScheduledEvent)workItem.TaskMessage.Event;
-#warning TODO:!
-            this.Name = taskEvent.Name!;
+            this.Name = taskEvent.Name ?? string.Empty;
             this.TaskEventId = taskEvent.EventId;
         }
 
@@ -1596,12 +1573,9 @@ internal static class LogEvents {
     internal class RenewActivityMessageCompleted : StructuredLogEvent, IEventSourceEvent {
         public RenewActivityMessageCompleted(TaskActivityWorkItem workItem, DateTime renewAt) {
             this.InstanceId = workItem.TaskMessage.OrchestrationInstance.InstanceId;
-#warning TODO:!
-            this.ExecutionId = workItem.TaskMessage.OrchestrationInstance.ExecutionId!;
-
+            this.ExecutionId = workItem.TaskMessage.OrchestrationInstance.ExecutionId ?? string.Empty;
             var taskEvent = (TaskScheduledEvent)workItem.TaskMessage.Event;
-#warning TODO:!
-            this.Name = taskEvent.Name!;
+            this.Name = taskEvent.Name ?? string.Empty;
             this.TaskEventId = taskEvent.EventId;
             this.NextRenewal = renewAt;
         }

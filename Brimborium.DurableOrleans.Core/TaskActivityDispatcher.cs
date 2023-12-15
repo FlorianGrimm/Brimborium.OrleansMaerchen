@@ -162,8 +162,7 @@ public sealed class TaskActivityDispatcher {
                     HistoryEvent? responseEvent;
 
                     try {
-#warning TODO:!
-                        string? output = await taskActivity.RunAsync(context, scheduledEvent.Input!);
+                        string? output = await taskActivity.RunAsync(context, scheduledEvent.Input);
                         responseEvent = new TaskCompletedEvent(-1, scheduledEvent.EventId, output);
                     } catch (Exception e) when (e is not TaskFailureException && !Utils.IsFatal(e) && !Utils.IsExecutionAborting(e)) {
                         // These are unexpected exceptions that occur in the task activity abstraction. Normal exceptions from 
@@ -187,17 +186,17 @@ public sealed class TaskActivityDispatcher {
                 result = dispatchContext.GetProperty<ActivityExecutionResult>();
             } catch (TaskFailureException e) {
                 // These are normal task activity failures. They can come from Activity implementations or from middleware.
-                _ = TraceHelper.TraceExceptionInstance(TraceEventType.Error, "TaskActivityDispatcher-ProcessTaskFailure", taskMessage.OrchestrationInstance, e);
+                TraceHelper.TraceExceptionInstance(TraceEventType.Error, "TaskActivityDispatcher-ProcessTaskFailure", taskMessage.OrchestrationInstance, e);
                 string? details = this.IncludeDetails ? e.Details : null;
                 var failureEvent = new TaskFailedEvent(-1, scheduledEvent.EventId, e.Message, details, e.FailureDetails);
 
-                _ = (traceActivity?.SetStatus(ActivityStatusCode.Error, e.Message));
+                traceActivity?.SetStatus(ActivityStatusCode.Error, e.Message);
 
                 this._LogHelper.TaskActivityFailure(orchestrationInstance, scheduledEvent.Name, failureEvent, e);
                 CorrelationTraceClient.Propagate(() => CorrelationTraceClient.TrackException(e));
                 result = new ActivityExecutionResult { ResponseEvent = failureEvent };
             } catch (Exception middlewareException) when (!Utils.IsFatal(middlewareException)) {
-                _ = (traceActivity?.SetStatus(ActivityStatusCode.Error, middlewareException.Message));
+                traceActivity?.SetStatus(ActivityStatusCode.Error, middlewareException.Message);
 
                 // These are considered retriable
                 this._LogHelper.TaskActivityDispatcherError(workItem, $"Unhandled exception in activity middleware pipeline: {middlewareException}");
@@ -210,8 +209,7 @@ public sealed class TaskActivityDispatcher {
                 this._LogHelper.TaskActivityCompleted(orchestrationInstance, scheduledEvent.Name, completedEvent);
             } else if (eventToRespond is null) {
                 // Default response if middleware prevents a response from being generated
-#warning TODO:! is wrong
-                eventToRespond = new TaskCompletedEvent(-1, scheduledEvent.EventId, null!);
+                eventToRespond = new TaskCompletedEvent(-1, scheduledEvent.EventId, null);
             }
 
             var responseTaskMessage = new TaskMessage {

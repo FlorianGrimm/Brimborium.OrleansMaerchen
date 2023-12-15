@@ -304,7 +304,7 @@ public static class Utils {
     /// </summary>
     /// <param name="input"></param>
     /// <returns></returns>
-    public static async Task<Stream?> GetDecompressedStreamAsync(Stream input) {
+    public static async Task<Stream?> GetDecompressedStreamAsync(Stream? input) {
         if (input is null) {
             return null;
         }

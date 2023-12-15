@@ -63,7 +63,6 @@ public class TraceHelper {
         if (!startEvent.TryGetParentTraceContext(out ActivityContext activityContext)) {
             return null;
         }
-
         string activityName = CreateSpanName(TraceActivityConstants.Orchestration, startEvent.Name, startEvent.Version);
         ActivityKind activityKind = ActivityKind.Server;
         DateTimeOffset startTime = startEvent.ParentTraceContext?.ActivityStartTime ?? default;

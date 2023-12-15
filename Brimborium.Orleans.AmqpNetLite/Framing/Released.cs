@@ -34,12 +34,12 @@ public sealed class Released : Outcome
     
     internal override void WriteField(ByteBuffer buffer, int index)
     {
-        Fx.Assert(false, "Invalid field index");
+        AssertException.Assert(false, "Invalid field index");
     }
 
     internal override void ReadField(ByteBuffer buffer, int index, byte formatCode)
     {
-        Fx.Assert(false, "Invalid field index");
+        AssertException.Assert(false, "Invalid field index");
     }
 
 #if TRACE

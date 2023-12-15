@@ -52,7 +52,7 @@ public sealed class Declared : Outcome
                 AmqpEncoder.WriteBinary(buffer, this.txnId, true);
                 break;
             default:
-                Fx.Assert(false, "Invalid field index");
+                AssertException.Assert(false, "Invalid field index");
                 break;
         }
     }
@@ -65,7 +65,7 @@ public sealed class Declared : Outcome
                 this.txnId = AmqpEncoder.ReadBinary(buffer, formatCode);
                 break;
             default:
-                Fx.Assert(false, "Invalid field index");
+                AssertException.Assert(false, "Invalid field index");
                 break;
         }
     }

@@ -52,7 +52,7 @@ public class SaslMechanisms : DescribedList
                 AmqpEncoder.WriteObject(buffer, this.saslServerMechanisms, true);
                 break;
             default:
-                Fx.Assert(false, "Invalid field index");
+                AssertException.Assert(false, "Invalid field index");
                 break;
         }
     }
@@ -65,7 +65,7 @@ public class SaslMechanisms : DescribedList
                 this.saslServerMechanisms = AmqpEncoder.ReadObject(buffer, formatCode);
                 break;
             default:
-                Fx.Assert(false, "Invalid field index");
+                AssertException.Assert(false, "Invalid field index");
                 break;
         }
     }

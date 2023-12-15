@@ -372,8 +372,8 @@ public partial class ReceiverLink : Link {
                 }
             }
 
-            Fx.Assert(waiter == null, "waiter must be null now");
-            Fx.Assert(callback != null, "callback must not be null now");
+            AssertException.Assert(waiter == null, "waiter must be null now");
+            AssertException.Assert(callback != null, "callback must not be null now");
             ArgumentNullException.ThrowIfNull(callback);
             callback(this, delivery.Message);
         }

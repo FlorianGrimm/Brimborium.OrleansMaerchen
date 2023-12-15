@@ -89,7 +89,7 @@ public class ConnectionListener : ConnectionFactoryBase {
     /// </summary>
     public SslSettings SSL {
         get {
-            return this.sslSettings ?? (this.sslSettings = new SslSettings());
+            return this.sslSettings ??= new SslSettings();
         }
     }
 
@@ -98,7 +98,7 @@ public class ConnectionListener : ConnectionFactoryBase {
     /// </summary>
     public SaslSettings SASL {
         get {
-            return this.saslSettings ?? (this.saslSettings = new SaslSettings());
+            return this.saslSettings ??= new SaslSettings();
         }
     }
 

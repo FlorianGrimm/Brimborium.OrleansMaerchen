@@ -65,7 +65,7 @@ public sealed class Discharge : DescribedList
                 AmqpEncoder.WriteBoolean(buffer, this.fail, true);
                 break;
             default:
-                Fx.Assert(false, "Invalid field index");
+                AssertException.Assert(false, "Invalid field index");
                 break;
         }
     }
@@ -81,7 +81,7 @@ public sealed class Discharge : DescribedList
                 this.fail = AmqpEncoder.ReadBoolean(buffer, formatCode);
                 break;
             default:
-                Fx.Assert(false, "Invalid field index");
+                AssertException.Assert(false, "Invalid field index");
                 break;
         }
     }

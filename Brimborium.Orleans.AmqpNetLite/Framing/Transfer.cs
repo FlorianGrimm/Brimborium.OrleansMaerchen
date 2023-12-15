@@ -189,7 +189,7 @@ public sealed class Transfer : DescribedList
                 AmqpEncoder.WriteBoolean(buffer, this.batchable, true);
                 break;
             default:
-                Fx.Assert(false, "Invalid field index");
+                AssertException.Assert(false, "Invalid field index");
                 break;
         }
     }
@@ -232,7 +232,7 @@ public sealed class Transfer : DescribedList
                 this.batchable = AmqpEncoder.ReadBoolean(buffer, formatCode);
                 break;
             default:
-                Fx.Assert(false, "Invalid field index");
+                AssertException.Assert(false, "Invalid field index");
                 break;
         }
     }

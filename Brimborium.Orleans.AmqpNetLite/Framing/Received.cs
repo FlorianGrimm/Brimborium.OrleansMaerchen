@@ -52,7 +52,7 @@ internal sealed class Received : DeliveryState
                 AmqpEncoder.WriteULong(buffer, this.sectionOffset, true);
                 break;
             default:
-                Fx.Assert(false, "Invalid field index");
+                AssertException.Assert(false, "Invalid field index");
                 break;
         }
     }
@@ -68,7 +68,7 @@ internal sealed class Received : DeliveryState
                 this.sectionOffset = AmqpEncoder.ReadULong(buffer, formatCode);
                 break;
             default:
-                Fx.Assert(false, "Invalid field index");
+                AssertException.Assert(false, "Invalid field index");
                 break;
         }
     }

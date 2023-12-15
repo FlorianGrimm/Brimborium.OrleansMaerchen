@@ -1,0 +1,42 @@
+﻿// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
+
+namespace Orleans.DurableTask.Netherite;
+
+[DataContract]
+class ActivityCompleted : PartitionUpdateEvent
+{
+    [DataMember]
+    public long ActivityId { get; set; }
+
+    [DataMember]
+    public TaskMessage Response { get; set; }
+
+    [DataMember]
+    public DateTime Timestamp { get; set; }
+
+    [DataMember]
+    public double LatencyMs { get; set; }
+
+    [DataMember]
+    public uint OriginPartitionId { get; set; }
+
+    [DataMember]
+    public int ReportedLoad { get; set; }
+
+    [IgnoreDataMember]
+    public override EventId EventId => EventId.MakePartitionInternalEventId(this.WorkItemId);
+
+    [IgnoreDataMember]
+    public string WorkItemId => ActivitiesState.GetWorkItemId(this.PartitionId, this.ActivityId);
+
+    public override void DetermineEffects(EffectTracker effects)
+    {
+        effects.Add(TrackedObjectKey.Activities);
+    }
+
+    public override void ApplyTo(TrackedObject trackedObject, EffectTracker effects)
+    {
+        trackedObject.Process(this, effects);
+    }
+}

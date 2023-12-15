@@ -1,0 +1,65 @@
+﻿// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
+
+namespace Orleans.DurableTask.Netherite.Scaling;
+
+class LoadPublishWorker : BatchWorker<(uint, PartitionLoadInfo)>
+{
+    readonly ILoadPublisherService service;
+    readonly OrchestrationServiceTraceHelper traceHelper;
+
+    // we are pushing the aggregated load information on a somewhat slower interval
+    public static TimeSpan AggregatePublishInterval = TimeSpan.FromSeconds(2);
+    TaskCompletionSource<object> cancelWait = new TaskCompletionSource<object>();
+
+    public LoadPublishWorker(ILoadPublisherService service, OrchestrationServiceTraceHelper traceHelper) : base(nameof(LoadPublishWorker), false, int.MaxValue, CancellationToken.None, null)
+    {
+        this.service = service;
+        this.traceHelper = traceHelper;
+    }
+
+    public Task FlushAsync()
+    {
+        // wait for the worker to complete, but cancel the timed wait so it goes quicker
+        // correct order of these two is important, see discussion at https://github.com/microsoft/durabletask-netherite/pull/262#discussion_r1185209501// 
+        var task = this.WaitForCompletionAsync();
+        this.CancelCurrentWait();
+        return task;
+    }
+
+    void CancelCurrentWait()
+    {     
+        var currentCancelWait = this.cancelWait;
+        this.cancelWait = new TaskCompletionSource<object>();
+        currentCancelWait.TrySetResult(null);
+    }
+
+    protected override async Task Process(IList<(uint, PartitionLoadInfo)> batch)
+    {
+        if (batch.Count != 0)
+        {
+            var latestForEachPartition = new Dictionary<uint, PartitionLoadInfo>();
+
+            foreach (var (partitionId, info) in batch)
+            {
+                latestForEachPartition[partitionId] = info;
+            }
+
+            try
+            {
+                await this.service.PublishAsync(latestForEachPartition, this.cancellationToken).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException)
+            {
+                // o.k. during shutdown
+            }
+            catch (Exception exception)
+            {
+                // we swallow exceptions so we can tolerate temporary Azure storage errors
+                this.traceHelper.TraceError("LoadPublishWorker failed", exception);
+            }
+        }
+
+        await Task.WhenAny(Task.Delay(AggregatePublishInterval), this.cancelWait.Task).ConfigureAwait(false);
+    }
+}

@@ -77,7 +77,7 @@ public sealed class Detach : DescribedList
                 AmqpEncoder.WriteObject(buffer, this.error, true);
                 break;
             default:
-                Fx.Assert(false, "Invalid field index");
+                AssertException.Assert(false, "Invalid field index");
                 break;
         }
     }
@@ -96,7 +96,7 @@ public sealed class Detach : DescribedList
                 this.error = (Error)AmqpEncoder.ReadObject(buffer, formatCode);
                 break;
             default:
-                Fx.Assert(false, "Invalid field index");
+                AssertException.Assert(false, "Invalid field index");
                 break;
         }
     }

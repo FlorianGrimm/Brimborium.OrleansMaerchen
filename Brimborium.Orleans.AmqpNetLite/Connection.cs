@@ -733,7 +733,7 @@ public partial class Connection : AmqpObject {
             uint localDue = GetDueMilliseconds(this.local, now, this.lastReceive);
             uint remoteDue = GetDueMilliseconds(this.remote, now, this.lastSend);
             uint due = localDue < remoteDue ? localDue : remoteDue;
-            Fx.Assert(due < uint.MaxValue, "At least one timeout should be set");
+            AssertException.Assert(due < uint.MaxValue, "At least one timeout should be set");
             this.timer.Change(due > int.MaxValue ? int.MaxValue : (int)due, -1);
         }
 

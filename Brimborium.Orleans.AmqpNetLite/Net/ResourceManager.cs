@@ -18,21 +18,21 @@
 namespace Brimborium.OrleansAmqp.Transactions;
 
 internal sealed class ResourceManager {
-    private static readonly ResourceManager instance = new ResourceManager();
-    private readonly Dictionary<Connection, Controller> controllers;
-    private readonly Dictionary<string, Enlistment> enlistments;
+    private static readonly ResourceManager _Instance = new ResourceManager();
+    private readonly Dictionary<Connection, Controller> _Controllers;
+    private readonly Dictionary<string, Enlistment> _Enlistments;
 
     private ResourceManager() {
-        this.controllers = new Dictionary<Connection, Controller>();
-        this.enlistments = new Dictionary<string, Enlistment>(StringComparer.OrdinalIgnoreCase);
+        this._Controllers = new Dictionary<Connection, Controller>();
+        this._Enlistments = new Dictionary<string, Enlistment>(StringComparer.OrdinalIgnoreCase);
     }
 
-    private object SyncRoot { get { return this.enlistments; } }
+    private object SyncRoot { get { return this._Enlistments; } }
 
     public static async Task<TransactionalState> GetTransactionalStateAsync(Link link) {
         Transaction txn = Transaction.Current;
         if (txn != null) {
-            byte[] txnId = await instance.EnlistAsync(link, txn).ConfigureAwait(false);
+            byte[] txnId = await _Instance.EnlistAsync(link, txn).ConfigureAwait(false);
             return new TransactionalState() { TxnId = txnId };
         }
 
@@ -43,13 +43,13 @@ internal sealed class ResourceManager {
         string id = txn.TransactionInformation.LocalIdentifier;
         Enlistment enlistment;
         lock (this.SyncRoot) {
-            if (!this.enlistments.TryGetValue(id, out enlistment)) {
+            if (!this._Enlistments.TryGetValue(id, out enlistment)) {
                 enlistment = new Enlistment(this, txn);
-                this.enlistments.Add(id, enlistment);
+                this._Enlistments.Add(id, enlistment);
                 txn.TransactionCompleted += this.OnTransactionCompleted;
 
                 if (!txn.EnlistPromotableSinglePhase(enlistment)) {
-                    this.enlistments.Remove(id);
+                    this._Enlistments.Remove(id);
                     txn.TransactionCompleted -= this.OnTransactionCompleted;
                     throw new InvalidOperationException("DTC not supported");
                 }
@@ -63,7 +63,7 @@ internal sealed class ResourceManager {
         lock (this.SyncRoot) {
             var localIdentifier = e.Transaction?.TransactionInformation.LocalIdentifier;
             if (localIdentifier is not null) { 
-                this.enlistments.Remove(localIdentifier);
+                this._Enlistments.Remove(localIdentifier);
             }
         }
     }
@@ -71,11 +71,11 @@ internal sealed class ResourceManager {
     private Controller GetOrCreateController(Link link) {
         Controller controller;
         lock (this.SyncRoot) {
-            if (!this.controllers.TryGetValue(link.Session.Connection, out controller)) {
+            if (!this._Controllers.TryGetValue(link.Session.Connection, out controller)) {
                 Session session = new Session(link.Session.Connection);
                 controller = new Controller(session);
                 controller.Closed += this.OnControllerClosed;
-                this.controllers.Add(link.Session.Connection, controller);
+                this._Controllers.Add(link.Session.Connection, controller);
             }
         }
 
@@ -86,7 +86,7 @@ internal sealed class ResourceManager {
         var controller = (Controller)obj;
         bool removed;
         lock (this.SyncRoot) {
-            removed = this.controllers.Remove(controller.Session.Connection);
+            removed = this._Controllers.Remove(controller.Session.Connection);
         }
 
         if (removed) {
@@ -95,44 +95,44 @@ internal sealed class ResourceManager {
     }
 
     private class Enlistment : IPromotableSinglePhaseNotification {
-        private static readonly TimeSpan rollbackTimeout = TimeSpan.FromMinutes(1);
-        private readonly ResourceManager owner;
-        private readonly Transaction transaction;
-        private readonly string transactionId;
-        private readonly object syncRoot;
-        private Controller controller;
-        private Task<byte[]> declareTask;
-        private byte[] txnid;
+        //private static readonly TimeSpan _RollbackTimeout = TimeSpan.FromMinutes(1);
+        private readonly ResourceManager _Owner;
+        private readonly Transaction _Transaction;
+        private readonly string _TransactionId;
+        private readonly object _SyncRoot;
+        private Controller _Controller;
+        private Task<byte[]> _DeclareTask;
+        private byte[] _Txnid;
 
         public Enlistment(ResourceManager owner, Transaction transaction) {
-            this.owner = owner;
-            this.transaction = transaction;
-            this.transactionId = this.transaction.TransactionInformation.LocalIdentifier;
-            this.syncRoot = new object();
+            this._Owner = owner;
+            this._Transaction = transaction;
+            this._TransactionId = this._Transaction.TransactionInformation.LocalIdentifier;
+            this._SyncRoot = new object();
         }
 
         public async Task<byte[]> EnlistAsync(Link link) {
-            if (this.txnid != null) {
-                return this.txnid;
+            if (this._Txnid != null) {
+                return this._Txnid;
             }
 
-            lock (this.syncRoot) {
-                if (this.declareTask == null) {
-                    this.controller = this.owner.GetOrCreateController(link);
-                    this.declareTask = this.controller.DeclareAsync();
+            lock (this._SyncRoot) {
+                if (this._DeclareTask == null) {
+                    this._Controller = this._Owner.GetOrCreateController(link);
+                    this._DeclareTask = this._Controller.DeclareAsync();
                 }
             }
 
-            return this.txnid = await this.declareTask.ConfigureAwait(false);
+            return this._Txnid = await this._DeclareTask.ConfigureAwait(false);
         }
 
         void IPromotableSinglePhaseNotification.Initialize() {
         }
 
         void IPromotableSinglePhaseNotification.Rollback(SinglePhaseEnlistment singlePhaseEnlistment) {
-            lock (this.syncRoot) {
-                if (this.txnid != null) {
-                    this.controller.DischargeAsync(this.txnid, true).ContinueWith(
+            lock (this._SyncRoot) {
+                if (this._Txnid != null) {
+                    this._Controller.DischargeAsync(this._Txnid, true).ContinueWith(
                         (t, o) => {
                             var spe = (SinglePhaseEnlistment)o;
                             if (t.IsFaulted) {
@@ -147,9 +147,9 @@ internal sealed class ResourceManager {
         }
 
         void IPromotableSinglePhaseNotification.SinglePhaseCommit(SinglePhaseEnlistment singlePhaseEnlistment) {
-            lock (this.syncRoot) {
-                if (this.txnid != null) {
-                    this.controller.DischargeAsync(this.txnid, false).ContinueWith(
+            lock (this._SyncRoot) {
+                if (this._Txnid != null) {
+                    this._Controller.DischargeAsync(this._Txnid, false).ContinueWith(
                         (t, o) => {
                             var spe = (SinglePhaseEnlistment)o;
                             if (t.IsFaulted) {

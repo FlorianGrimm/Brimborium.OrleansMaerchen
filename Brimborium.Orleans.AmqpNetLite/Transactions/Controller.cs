@@ -17,53 +17,37 @@
 
 namespace Brimborium.OrleansAmqp.Transactions;
 
-using System;
-using System.Threading.Tasks;
-using Brimborium.OrleansAmqp;
-using Brimborium.OrleansAmqp.Framing;
-
-internal sealed class Controller : SenderLink
-{
+internal sealed class Controller : SenderLink {
     private static readonly OutcomeCallback onOutcome = OnOutcome;
     public Controller(Session session)
-        : base(session, GetName(), new Attach() { Target = new Coordinator(), Source = new Source() }, null)
-    {
+        : base(session, GetName(), new Attach() { Target = new Coordinator(), Source = new Source() }, null) {
     }
 
-    public Task<byte[]> DeclareAsync()
-    {
+    public Task<byte[]> DeclareAsync() {
         Message message = new Message(new Declare());
         TaskCompletionSource<byte[]> tcs = new TaskCompletionSource<byte[]>();
         this.Send(message, null, onOutcome, tcs);
         return tcs.Task;
     }
 
-    public Task DischargeAsync(byte[] txnId, bool fail)
-    {
+    public Task DischargeAsync(byte[] txnId, bool fail) {
         Message message = new Message(new Discharge() { TxnId = txnId, Fail = fail });
         TaskCompletionSource<byte[]> tcs = new TaskCompletionSource<byte[]>();
         this.Send(message, null, onOutcome, tcs);
         return tcs.Task;
     }
 
-    private static string GetName()
-    {
+    private static string GetName() {
         return "controller-link-" + Guid.NewGuid().ToString("N").Substring(0, 5);
     }
 
-    private static void OnOutcome(ILink link, Message message, Outcome outcome, object state)
-    {
+    private static void OnOutcome(ILink link, Message message, Outcome outcome, object state) {
         var tcs = (TaskCompletionSource<byte[]>)state;
-        if (outcome.Descriptor.Code == Codec.Declared.Code)
-        {
+        if (outcome.Descriptor.Code == Codec.Declared.Code) {
             tcs.SetResult(((Declared)outcome).TxnId);
-        }
-        else if (outcome.Descriptor.Code == Codec.Rejected.Code)
-        {
+        } else if (outcome.Descriptor.Code == Codec.Rejected.Code) {
             tcs.SetException(new AmqpException(((Rejected)outcome).Error));
-        }
-        else
-        {
+        } else {
             tcs.SetCanceled();
         }
     }

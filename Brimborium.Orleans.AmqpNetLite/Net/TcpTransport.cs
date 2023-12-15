@@ -17,290 +17,222 @@
 
 namespace Brimborium.OrleansAmqp;
 
-using System;
-using System.Collections.Generic;
-using System.Net;
-using System.Net.Security;
-using System.Net.Sockets;
-using System.Threading.Tasks;
-using Brimborium.OrleansAmqp.Handler;
-
-internal class TcpTransport : IAsyncTransport
-{
+internal class TcpTransport : IAsyncTransport {
     private static readonly RemoteCertificateValidationCallback noneCertValidator = (a, b, c, d) => true;
     private readonly IBufferManager bufferManager;
     protected IAsyncTransport socketTransport;
     private Connection connection;
 
     public TcpTransport()
-        : this(null)
-    {
+        : this(null) {
     }
 
-    public TcpTransport(IBufferManager bufferManager)
-    {
+    public TcpTransport(IBufferManager bufferManager) {
         this.bufferManager = bufferManager;
     }
 
-    public static bool MatchScheme(string scheme)
-    {
+    public static bool MatchScheme(string scheme) {
         return string.Equals(scheme, Address.Amqp, StringComparison.OrdinalIgnoreCase) ||
             string.Equals(scheme, Address.Amqps, StringComparison.OrdinalIgnoreCase);
     }
 
-    public void Connect(Connection connection, Address address, bool noVerification)
-    {
+    public void Connect(Connection connection, Address address, bool noVerification) {
         this.connection = connection;
         var factory = new ConnectionFactory();
-        if (noVerification)
-        {
+        if (noVerification) {
             factory.SSL.RemoteCertificateValidationCallback = noneCertValidator;
         }
 
         this.ConnectAsync(address, factory, connection.Handler).ConfigureAwait(false).GetAwaiter().GetResult();
     }
 
-    public async Task ConnectAsync(Address address, ConnectionFactory factory, IHandler handler)
-    {
+    public async Task ConnectAsync(Address address, ConnectionFactory factory, IHandler handler) {
         IPAddress[] ipAddresses;
         IPAddress ip;
-        if (IPAddress.TryParse(address.Host, out ip))
-        {
+        if (IPAddress.TryParse(address.Host, out ip)) {
             ipAddresses = new IPAddress[] { ip };
-        }
-        else
-        {
+        } else {
             ipAddresses = await TaskExtensions.GetHostAddressesAsync(address.Host).ConfigureAwait(false);
         }
 
         // need to handle both IPv4 and IPv6
         Socket socket = null;
         Exception exception = null;
-        for (int i = 0; i < ipAddresses.Length; i++)
-        {
+        for (int i = 0; i < ipAddresses.Length; i++) {
             if (ipAddresses[i] == null ||
                 (ipAddresses[i].AddressFamily == AddressFamily.InterNetwork && !Socket.OSSupportsIPv4) ||
-                (ipAddresses[i].AddressFamily == AddressFamily.InterNetworkV6 && !Socket.OSSupportsIPv6))
-            {
+                (ipAddresses[i].AddressFamily == AddressFamily.InterNetworkV6 && !Socket.OSSupportsIPv6)) {
                 continue;
             }
 
             socket = new Socket(ipAddresses[i].AddressFamily, SocketType.Stream, ProtocolType.Tcp);
-            try
-            {
+            try {
                 await socket.ConnectAsync(ipAddresses[i], address.Port).ConfigureAwait(false);
 
                 exception = null;
                 break;
-            }
-            catch (Exception e)
-            {
+            } catch (Exception e) {
                 exception = e;
                 socket.Dispose();
                 socket = null;
             }
         }
 
-        if (socket == null)
-        {
+        if (socket == null) {
             throw exception ?? new SocketException((int)SocketError.AddressNotAvailable);
         }
 
-        if (handler != null && handler.CanHandle(EventId.SocketConnect))
-        {
+        if (handler != null && handler.CanHandle(EventId.SocketConnect)) {
             handler.Handle(Event.Create(EventId.SocketConnect, connection, null, null, socket));
         }
 
         factory.tcpSettings?.Configure(socket);
 
         IAsyncTransport transport;
-        if (address.UseSsl)
-        {
+        if (address.UseSsl) {
             RemoteCertificateValidationCallback remoteCertificateValidationCallback = Connection.DisableServerCertValidation ? noneCertValidator : null;
             LocalCertificateSelectionCallback localCertificateSelectionCallback = null;
             var ssl = factory.SslInternal;
-            if (ssl != null)
-            {
+            if (ssl != null) {
                 remoteCertificateValidationCallback = ssl.RemoteCertificateValidationCallback;
                 localCertificateSelectionCallback = ssl.LocalCertificateSelectionCallback;
             }
 
             SslStream sslStream = new SslStream(new NetworkStream(socket, true), false, remoteCertificateValidationCallback, localCertificateSelectionCallback);
-            if (handler != null && handler.CanHandle(EventId.SslAuthenticate))
-            {
+            if (handler != null && handler.CanHandle(EventId.SslAuthenticate)) {
                 handler.Handle(Event.Create(EventId.SslAuthenticate, connection, null, null, sslStream));
-            }
-            else
-            {
-                if (ssl == null)
-                {
+            } else {
+                if (ssl == null) {
                     await sslStream.AuthenticateAsClientAsync(address.Host).ConfigureAwait(false);
-                }
-                else
-                {
+                } else {
                     await sslStream.AuthenticateAsClientAsync(address.Host, ssl.ClientCertificates,
                         ssl.Protocols, ssl.CheckCertificateRevocation).ConfigureAwait(false);
                 }
             }
 
             transport = new SslSocket(this, sslStream);
-        }
-        else
-        {
+        } else {
             transport = new TcpSocket(this, socket);
         }
 
         this.socketTransport = transport;
     }
 
-    void IAsyncTransport.SetConnection(Connection connection)
-    {
+    void IAsyncTransport.SetConnection(Connection connection) {
         this.connection = connection;
     }
 
-    Task<int> IAsyncTransport.ReceiveAsync(byte[] buffer, int offset, int count)
-    {
+    Task<int> IAsyncTransport.ReceiveAsync(byte[] buffer, int offset, int count) {
         return this.socketTransport.ReceiveAsync(buffer, offset, count);
     }
 
-    Task IAsyncTransport.SendAsync(IList<ByteBuffer> bufferList, int listSize)
-    {
+    Task IAsyncTransport.SendAsync(IList<ByteBuffer> bufferList, int listSize) {
         return this.socketTransport.SendAsync(bufferList, listSize);
     }
 
-    void ITransport.Close()
-    {
+    void ITransport.Close() {
         this.socketTransport.Close();
     }
 
-    void ITransport.Send(ByteBuffer buffer)
-    {
+    void ITransport.Send(ByteBuffer buffer) {
         this.socketTransport.Send(buffer);
     }
 
-    int ITransport.Receive(byte[] buffer, int offset, int count)
-    {
+    int ITransport.Receive(byte[] buffer, int offset, int count) {
         return this.socketTransport.Receive(buffer, offset, count);
     }
 
-    protected class TcpSocket : IAsyncTransport
-    {
-        private readonly TcpTransport transport;
-        private readonly Socket socket;
-        private readonly SocketAsyncEventArgs sendArgs;
-        private readonly SocketAsyncEventArgs receiveArgs;
-        private readonly IopsTracker receiveTracker;
-        private ByteBuffer receiveBuffer;
+    protected class TcpSocket : IAsyncTransport {
+        private readonly TcpTransport _Transport;
+        private readonly Socket _Socket;
+        private readonly SocketAsyncEventArgs _SendArgs;
+        private readonly SocketAsyncEventArgs _ReceiveArgs;
+        private readonly IopsTracker _ReceiveTracker;
+        private ByteBuffer _ReceiveBuffer;
 
-        public TcpSocket(TcpTransport transport, Socket socket)
-        {
-            this.transport = transport;
-            this.socket = socket;
-            this.receiveTracker = new IopsTracker();
-            this.sendArgs = new SocketAsyncEventArgs();
-            this.sendArgs.Completed += (s, a) => SocketExtensions.Complete(s, a, true, 0);
-            this.receiveArgs = new SocketAsyncEventArgs();
-            this.receiveArgs.Completed += (s, a) => SocketExtensions.Complete(s, a, true, a.BytesTransferred);
+        public TcpSocket(TcpTransport transport, Socket socket) {
+            this._Transport = transport;
+            this._Socket = socket;
+            this._ReceiveTracker = new IopsTracker();
+            this._SendArgs = new SocketAsyncEventArgs();
+            this._SendArgs.Completed += (s, a) => SocketExtensions.Complete(s, a, true, 0);
+            this._ReceiveArgs = new SocketAsyncEventArgs();
+            this._ReceiveArgs.Completed += (s, a) => SocketExtensions.Complete(s, a, true, a.BytesTransferred);
         }
 
-        void IAsyncTransport.SetConnection(Connection connection)
-        {
+        void IAsyncTransport.SetConnection(Connection connection) {
             throw new NotImplementedException();
         }
 
-        Task IAsyncTransport.SendAsync(IList<ByteBuffer> bufferList, int listSize)
-        {
+        Task IAsyncTransport.SendAsync(IList<ByteBuffer> bufferList, int listSize) {
             var segments = new ArraySegment<byte>[bufferList.Count];
-            for (int i = 0; i < bufferList.Count; i++)
-            {
+            for (int i = 0; i < bufferList.Count; i++) {
                 ByteBuffer f = bufferList[i];
                 segments[i] = new ArraySegment<byte>(f.Buffer, f.Offset, f.Length);
             }
 
-            return this.socket.SendAsync(this.sendArgs, segments);
+            return this._Socket.SendAsync(this._SendArgs, segments);
         }
 
-        async Task<int> IAsyncTransport.ReceiveAsync(byte[] buffer, int offset, int count)
-        {
-            if (this.receiveBuffer != null && this.receiveBuffer.Length > 0)
-            {
-                try
-                {
-                    this.receiveBuffer.AddReference();
-                    return ReceiveFromBuffer(this.receiveBuffer, buffer, offset, count);
-                }
-                finally
-                {
-                    this.receiveBuffer.ReleaseReference();
+        async Task<int> IAsyncTransport.ReceiveAsync(byte[] buffer, int offset, int count) {
+            if (this._ReceiveBuffer != null && this._ReceiveBuffer.Length > 0) {
+                try {
+                    this._ReceiveBuffer.AddReference();
+                    return ReceiveFromBuffer(this._ReceiveBuffer, buffer, offset, count);
+                } finally {
+                    this._ReceiveBuffer.ReleaseReference();
                 }
             }
 
-            if (this.receiveTracker.TrackOne())
-            {
-                this.receiveBuffer?.ReleaseReference();
+            if (this._ReceiveTracker.TrackOne()) {
+                this._ReceiveBuffer?.ReleaseReference();
 
-                if (this.receiveTracker.Level > 0)
-                {
-                    this.receiveBuffer = new ByteBuffer(8 * 1024, false);
-                }
-                else
-                {
-                    this.receiveBuffer = null;
+                if (this._ReceiveTracker.Level > 0) {
+                    this._ReceiveBuffer = new ByteBuffer(8 * 1024, false);
+                } else {
+                    this._ReceiveBuffer = null;
                 }
             }
 
-            if (this.receiveBuffer == null)
-            {
-                return await this.socket.ReceiveAsync(this.receiveArgs, buffer, offset, count).ConfigureAwait(false);
-            }
-            else
-            {
-                try
-                {
-                    this.receiveBuffer.AddReference();
-                    int bytes = await this.socket.ReceiveAsync(this.receiveArgs, this.receiveBuffer.Buffer,
-                        this.receiveBuffer.WritePos, this.receiveBuffer.Size).ConfigureAwait(false);
-                    this.receiveBuffer.Append(bytes);
-                    return ReceiveFromBuffer(this.receiveBuffer, buffer, offset, count);
-                }
-                finally
-                {
-                    this.receiveBuffer.ReleaseReference();
+            if (this._ReceiveBuffer == null) {
+                return await this._Socket.ReceiveAsync(this._ReceiveArgs, buffer, offset, count).ConfigureAwait(false);
+            } else {
+                try {
+                    this._ReceiveBuffer.AddReference();
+                    int bytes = await this._Socket.ReceiveAsync(this._ReceiveArgs, this._ReceiveBuffer.Buffer,
+                        this._ReceiveBuffer.WritePos, this._ReceiveBuffer.Size).ConfigureAwait(false);
+                    this._ReceiveBuffer.Append(bytes);
+                    return ReceiveFromBuffer(this._ReceiveBuffer, buffer, offset, count);
+                } finally {
+                    this._ReceiveBuffer.ReleaseReference();
                 }
             }
         }
 
-        void ITransport.Send(ByteBuffer buffer)
-        {
-            this.socket.Send(buffer.Buffer, buffer.Offset, buffer.Length, SocketFlags.None);
+        void ITransport.Send(ByteBuffer buffer) {
+            this._Socket.Send(buffer.Buffer, buffer.Offset, buffer.Length, SocketFlags.None);
         }
 
-        int ITransport.Receive(byte[] buffer, int offset, int count)
-        {
-            return this.socket.Receive(buffer, offset, count, SocketFlags.None);
+        int ITransport.Receive(byte[] buffer, int offset, int count) {
+            return this._Socket.Receive(buffer, offset, count, SocketFlags.None);
         }
 
-        void ITransport.Close()
-        {
-            this.sendArgs.Dispose();
-            this.receiveArgs.Dispose();
-            this.socket.Dispose();
+        void ITransport.Close() {
+            this._SendArgs.Dispose();
+            this._ReceiveArgs.Dispose();
+            this._Socket.Dispose();
 
-            var temp = this.receiveBuffer;
+            var temp = this._ReceiveBuffer;
             temp?.ReleaseReference();
         }
 
-        private static int ReceiveFromBuffer(ByteBuffer byteBuffer, byte[] buffer, int offset, int count)
-        {
+        private static int ReceiveFromBuffer(ByteBuffer byteBuffer, byte[] buffer, int offset, int count) {
             int len = byteBuffer.Length;
-            if (len <= count)
-            {
+            if (len <= count) {
                 Buffer.BlockCopy(byteBuffer.Buffer, byteBuffer.Offset, buffer, offset, len);
                 byteBuffer.Reset();
                 return len;
-            }
-            else
-            {
+            } else {
                 Buffer.BlockCopy(byteBuffer.Buffer, byteBuffer.Offset, buffer, offset, count);
                 byteBuffer.Complete(count);
                 return count;
@@ -308,78 +240,61 @@ internal class TcpTransport : IAsyncTransport
         }
     }
 
-    protected class SslSocket : IAsyncTransport
-    {
+    protected class SslSocket : IAsyncTransport {
         private readonly TcpTransport transport;
         private readonly SslStream sslStream;
 
-        public SslSocket(TcpTransport transport, SslStream sslStream)
-        {
+        public SslSocket(TcpTransport transport, SslStream sslStream) {
             this.transport = transport;
             this.sslStream = sslStream;
         }
 
-        void IAsyncTransport.SetConnection(Connection connection)
-        {
+        void IAsyncTransport.SetConnection(Connection connection) {
             throw new NotImplementedException();
         }
 
-        async Task IAsyncTransport.SendAsync(IList<ByteBuffer> bufferList, int listSize)
-        {
+        async Task IAsyncTransport.SendAsync(IList<ByteBuffer> bufferList, int listSize) {
             ByteBuffer writeBuffer;
             bool releaseBuffer = false;
-            if (bufferList.Count == 1)
-            {
+            if (bufferList.Count == 1) {
                 writeBuffer = bufferList[0];
-            }
-            else
-            {
+            } else {
                 releaseBuffer = true;
                 writeBuffer = this.transport.bufferManager.GetByteBuffer(listSize);
-                for (int i = 0; i < bufferList.Count; i++)
-                {
+                for (int i = 0; i < bufferList.Count; i++) {
                     ByteBuffer segment = bufferList[i];
                     Buffer.BlockCopy(segment.Buffer, segment.Offset, writeBuffer.Buffer, writeBuffer.WritePos, segment.Length);
                     writeBuffer.Append(segment.Length);
                 }
             }
 
-            try
-            {
+            try {
                 await this.sslStream.WriteAsync(writeBuffer.Buffer, writeBuffer.Offset, writeBuffer.Length).ConfigureAwait(false);
-            }
-            finally
-            {
-                if (releaseBuffer)
-                {
+            } finally {
+                if (releaseBuffer) {
                     writeBuffer.ReleaseReference();
                 }
             }
         }
 
-        async Task<int> IAsyncTransport.ReceiveAsync(byte[] buffer, int offset, int count)
-        {
+        async Task<int> IAsyncTransport.ReceiveAsync(byte[] buffer, int offset, int count) {
             return await this.sslStream.ReadAsync(buffer, offset, count).ConfigureAwait(false);
         }
 
-        void ITransport.Send(ByteBuffer buffer)
-        {
+        void ITransport.Send(ByteBuffer buffer) {
             this.sslStream.Write(buffer.Buffer, buffer.Offset, buffer.Length);
         }
 
-        int ITransport.Receive(byte[] buffer, int offset, int count)
-        {
+        int ITransport.Receive(byte[] buffer, int offset, int count) {
             return this.sslStream.Read(buffer, offset, count);
         }
 
-        void ITransport.Close()
-        {
+        void ITransport.Close() {
             this.sslStream.Dispose();
         }
     }
 
-    private class IopsTracker
-    {
+    private class IopsTracker {
         private const long WindowTicks = 6 * 1000 * 10000;
         private static readonly int[] thresholds = new int[] { 6000, 60000 };
         private DateTime windowStart;
@@ -387,42 +302,32 @@ internal class TcpTransport : IAsyncTransport
         private byte level0;
         private byte level1;
 
-        public IopsTracker()
-        {
+        public IopsTracker() {
             this.windowStart = DateTime.UtcNow;
         }
 
-        public byte Level
-        {
+        public byte Level {
             get { return this.level0; }
         }
 
-        public bool TrackOne()
-        {
+        public bool TrackOne() {
             this.iops++;
             var now = DateTime.UtcNow;
             bool changed = false;
-            if (now.Ticks - this.windowStart.Ticks >= WindowTicks)
-            {
+            if (now.Ticks - this.windowStart.Ticks >= WindowTicks) {
                 int i = thresholds.Length;
-                while (i >= 1 && this.iops < thresholds[i - 1])
-                {
+                while (i >= 1 && this.iops < thresholds[i - 1]) {
                     i--;
                 }
 
                 byte level = (byte)i;
-                if (this.level1 > this.level0)
-                {
-                    if (level > this.level0)
-                    {
+                if (this.level1 > this.level0) {
+                    if (level > this.level0) {
                         this.level0 = Math.Min(level, this.level1);
                         changed = true;
                     }
-                }
-                else if (this.level1 < this.level0)
-                {
-                    if (level < this.level0)
-                    {
+                } else if (this.level1 < this.level0) {
+                    if (level < this.level0) {
                         this.level0 = Math.Max(level0, this.level1);
                         changed = true;
                     }

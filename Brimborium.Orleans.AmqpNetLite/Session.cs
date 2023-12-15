@@ -365,7 +365,7 @@ public partial class Session : AmqpObject
 
     internal void OnCommand(DescribedList command, ByteBuffer buffer)
     {
-        Fx.Assert(this.state != SessionState.EndReceived && this.state != SessionState.End,
+        AssertException.Assert(this.state != SessionState.EndReceived && this.state != SessionState.End,
             "Session is ending or ended and cannot receive commands.");
         if (command.Descriptor.Code == Codec.Attach.Code)
         {

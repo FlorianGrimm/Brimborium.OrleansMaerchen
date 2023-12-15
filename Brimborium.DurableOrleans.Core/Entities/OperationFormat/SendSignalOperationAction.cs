@@ -26,7 +26,7 @@ public class SendSignalOperationAction : OperationAction {
     /// <summary>
     /// The destination entity for the signal.
     /// </summary>
-    public string? InstanceId { get; set; }
+    public string InstanceId { get; set; }
 
     /// <summary>
     /// The name of the operation being signaled.

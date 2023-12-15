@@ -20,4 +20,8 @@
     <PackageReference Include="Microsoft.Orleans.Core.Abstractions" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\Brimborium.ReturnValue\Brimborium.ReturnValue.csproj" />
+  </ItemGroup>
+
 </Project>

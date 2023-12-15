@@ -245,7 +245,7 @@ public sealed class AmqpSerializer {
 
         if (type.IsGenericType() && type.GetGenericTypeDefinition() == typeof(Nullable<>)) {
             Type[] argTypes = type.GetGenericArguments();
-            Fx.Assert(argTypes.Length == 1, "Nullable type must have one argument");
+            AssertException.Assert(argTypes.Length == 1, "Nullable type must have one argument");
             Type argType = argTypes[0];
             if (argType.IsEnum()) {
                 return CompileEnumType(argType);

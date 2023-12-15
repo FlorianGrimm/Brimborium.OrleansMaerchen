@@ -89,7 +89,7 @@ public sealed class Error : DescribedList
                 AmqpEncoder.WriteMap(buffer, this.info, true);
                 break;
             default:
-                Fx.Assert(false, "Invalid field index");
+                AssertException.Assert(false, "Invalid field index");
                 break;
         }
     }
@@ -108,7 +108,7 @@ public sealed class Error : DescribedList
                 this.info = AmqpEncoder.ReadFields(buffer, formatCode);
                 break;
             default:
-                Fx.Assert(false, "Invalid field index");
+                AssertException.Assert(false, "Invalid field index");
                 break;
         }
     }

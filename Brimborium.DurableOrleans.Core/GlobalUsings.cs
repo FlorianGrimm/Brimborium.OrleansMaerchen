@@ -15,7 +15,6 @@ global using global::System.Runtime.CompilerServices;
 global using global::System.Runtime.ExceptionServices;
 global using global::System.Runtime.InteropServices;
 global using global::System.Runtime.Serialization;
-
 global using global::System.Text;
 
 global using global::Orleans.DurableTask.Core.Common;

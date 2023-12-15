@@ -77,7 +77,7 @@ public sealed class Modified : Outcome
                 AmqpEncoder.WriteMap(buffer, this.messageAnnotations, true);
                 break;
             default:
-                Fx.Assert(false, "Invalid field index");
+                AssertException.Assert(false, "Invalid field index");
                 break;
         }
     }
@@ -96,7 +96,7 @@ public sealed class Modified : Outcome
                 this.messageAnnotations = AmqpEncoder.ReadFields(buffer, formatCode);
                 break;
             default:
-                Fx.Assert(false, "Invalid field index");
+                AssertException.Assert(false, "Invalid field index");
                 break;
         }
     }

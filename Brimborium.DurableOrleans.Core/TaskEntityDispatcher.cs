@@ -243,6 +243,7 @@ public class TaskEntityDispatcher {
 
                     // go through all results
                     // for each operation that is not a signal, send a result message back to the calling orchestrator
+#warning TODO:!
                     for (int i = 0; i < result.Results!.Count; i++) {
 #warning TODO:!
                         var req = workToDoNow.Operations![i];
@@ -433,8 +434,7 @@ public class TaskEntityDispatcher {
                         var requestMessage = new RequestMessage();
 
                         try {
-#warning TODO:!
-                            JsonConvert.PopulateObject(eventRaisedEvent.Input!, requestMessage, Serializer.InternalSerializerSettings);
+                            JsonConvert.PopulateObject(eventRaisedEvent.Input, requestMessage, Serializer.InternalSerializerSettings);
                         } catch (Exception exception) {
                             throw new EntitySchedulerException("Failed to deserialize incoming request message - may be corrupted or wrong version.", exception);
                         }
@@ -473,8 +473,7 @@ public class TaskEntityDispatcher {
                         var message = new ReleaseMessage();
                         try {
                             // restore the scheduler state from the input
-#warning TODO:!
-                            JsonConvert.PopulateObject(eventRaisedEvent.Input!, message, Serializer.InternalSerializerSettings);
+                            JsonConvert.PopulateObject(eventRaisedEvent.Input, message, Serializer.InternalSerializerSettings);
                         } catch (Exception exception) {
                             throw new EntitySchedulerException("Failed to deserialize lock release message - may be corrupted or wrong version.", exception);
                         }
@@ -603,8 +602,7 @@ public class TaskEntityDispatcher {
 
     private void SendSignalMessage(WorkItemEffects effects, SchedulerState schedulerState, SendSignalOperationAction action) {
         OrchestrationInstance destination = new OrchestrationInstance() {
-#warning TODO:!
-            InstanceId = action.InstanceId!
+            InstanceId = action.InstanceId
         };
         RequestMessage message = new RequestMessage() {
             ParentInstanceId = effects.InstanceId,

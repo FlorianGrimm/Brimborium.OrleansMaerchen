@@ -36,26 +36,28 @@ internal enum ActivityStatusCode
 /// </summary>
 internal static class DiagnosticActivityExtensions
 {
-    private static readonly Action<Activity, string> s_setSpanId;
-    private static readonly Action<Activity, string> s_setId;
-    private static readonly Action<Activity, ActivityStatusCode, string> s_setStatus;
+    private static readonly Action<Activity, string> _SetSpanId;
+    private static readonly Action<Activity, string> _SetId;
+    //private static readonly Action<Activity, ActivityStatusCode, string> _SetStatus;
 
     static DiagnosticActivityExtensions()
     {
         BindingFlags flags = BindingFlags.NonPublic | BindingFlags.Instance;
-        s_setSpanId = typeof(Activity).GetField("_spanId", flags).CreateSetter<Activity, string>();
-        s_setId = typeof(Activity).GetField("_id", flags).CreateSetter<Activity, string>();
-        s_setStatus = CreateSetStatus();
+        _SetSpanId = typeof(Activity).GetField("_spanId", flags).CreateSetter<Activity, string>();
+        _SetId = typeof(Activity).GetField("_id", flags).CreateSetter<Activity, string>();
     }
 
+
     public static void SetId(this Activity activity, string id)
-        => s_setId(activity, id);
+        => _SetId(activity, id);
 
     public static void SetSpanId(this Activity activity, string spanId)
-        => s_setSpanId(activity, spanId);
+        => _SetSpanId(activity, spanId);
 
+#if false
     public static void SetStatus(this Activity activity, ActivityStatusCode status, string description)
-        => s_setStatus(activity, status, description);
+        => _SetStatus(activity, status, description);
+        
 
     private static Action<Activity, ActivityStatusCode, string> CreateSetStatus()
     {
@@ -63,10 +65,7 @@ internal static class DiagnosticActivityExtensions
         if (method is null)
         {
             return (activity, status, description) => {
-                if (activity is null)
-                {
-                    throw new ArgumentNullException(nameof(activity));
-                }
+                ArgumentNullException.ThrowIfNull(activity);
                 string str = status switch
                 {
                     ActivityStatusCode.Unset => "UNSET",
@@ -93,4 +92,5 @@ internal static class DiagnosticActivityExtensions
         return Expression.Lambda<Action<Activity, ActivityStatusCode, string>>(callExp, targetExp, status, description)
             .Compile();
     }
+#endif
 }

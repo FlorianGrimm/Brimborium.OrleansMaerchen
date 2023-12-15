@@ -313,7 +313,7 @@ public abstract partial class Link : AmqpObject
 
     internal void SendAttach(bool role, uint initialDeliveryCount, Attach attach)
     {
-        Fx.Assert(this.state == LinkState.Start, "state must be Start");
+        AssertException.Assert(this.state == LinkState.Start, "state must be Start");
         this.state = LinkState.AttachSent;
         attach.LinkName = this.name;
         attach.Handle = this.handle;

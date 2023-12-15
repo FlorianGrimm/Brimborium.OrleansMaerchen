@@ -1,0 +1,33 @@
+﻿// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
+
+namespace Orleans.DurableTask.Netherite;
+
+[DataContract]
+class OffloadDecision : PartitionUpdateEvent
+{
+    [DataMember]
+    public DateTime Timestamp { get; set; }
+
+    [IgnoreDataMember]
+    public SortedDictionary<uint, List<(TaskMessage,string)>> ActivitiesToTransfer { get; set; }
+
+    [IgnoreDataMember]
+    public override EventId EventId => 
+        EventId.MakePartitionInternalEventId($"{this.PartitionId:D2}F{this.Timestamp:o}");
+
+    public override void DetermineEffects(EffectTracker effects)
+    {
+        // start processing on activities, which makes the decision, 
+        // and if offloading, fills in the fields, and adds the outbox to the effects
+        effects.Add(TrackedObjectKey.Activities);
+    }
+
+    [IgnoreDataMember]
+    public override bool CountsAsPartitionActivity => false;
+
+    public override void ApplyTo(TrackedObject trackedObject, EffectTracker effects)
+    {
+        trackedObject.Process(this, effects);
+    }
+}

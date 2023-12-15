@@ -52,7 +52,7 @@ public class SaslChallenge : DescribedList
                 AmqpEncoder.WriteBinary(buffer, this.challenge, true);
                 break;
             default:
-                Fx.Assert(false, "Invalid field index");
+                AssertException.Assert(false, "Invalid field index");
                 break;
         }
     }
@@ -65,7 +65,7 @@ public class SaslChallenge : DescribedList
                 this.challenge = AmqpEncoder.ReadBinary(buffer, formatCode);
                 break;
             default:
-                Fx.Assert(false, "Invalid field index");
+                AssertException.Assert(false, "Invalid field index");
                 break;
         }
     }

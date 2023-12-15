@@ -218,7 +218,7 @@ public sealed class Properties : DescribedList
                 AmqpEncoder.WriteString(buffer, this.replyToGroupId, true);
                 break;
             default:
-                Fx.Assert(false, "Invalid field index");
+                AssertException.Assert(false, "Invalid field index");
                 break;
         }
     }
@@ -267,7 +267,7 @@ public sealed class Properties : DescribedList
                 this.replyToGroupId = AmqpEncoder.ReadString(buffer, formatCode);
                 break;
             default:
-                Fx.Assert(false, "Invalid field index");
+                AssertException.Assert(false, "Invalid field index");
                 break;
         }
     }

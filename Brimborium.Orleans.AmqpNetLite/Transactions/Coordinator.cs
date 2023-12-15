@@ -52,7 +52,7 @@ public sealed class Coordinator : DescribedList
                 AmqpEncoder.WriteObject(buffer, this.capabilities);
                 break;
             default:
-                Fx.Assert(false, "Invalid field index");
+                AssertException.Assert(false, "Invalid field index");
                 break;
         }
     }
@@ -65,7 +65,7 @@ public sealed class Coordinator : DescribedList
                 this.capabilities = AmqpEncoder.ReadObject(buffer, formatCode);
                 break;
             default:
-                Fx.Assert(false, "Invalid field index");
+                AssertException.Assert(false, "Invalid field index");
                 break;
         }
     }

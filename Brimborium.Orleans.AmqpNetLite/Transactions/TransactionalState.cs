@@ -65,7 +65,7 @@ public sealed class TransactionalState : DeliveryState
                 AmqpEncoder.WriteObject(buffer, this.outcome);
                 break;
             default:
-                Fx.Assert(false, "Invalid field index");
+                AssertException.Assert(false, "Invalid field index");
                 break;
         }
     }
@@ -81,7 +81,7 @@ public sealed class TransactionalState : DeliveryState
                 this.outcome = (Outcome)AmqpEncoder.ReadObject(buffer, formatCode);
                 break;
             default:
-                Fx.Assert(false, "Invalid field index");
+                AssertException.Assert(false, "Invalid field index");
                 break;
         }
     }

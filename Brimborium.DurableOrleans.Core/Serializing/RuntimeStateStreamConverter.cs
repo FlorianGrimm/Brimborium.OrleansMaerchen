@@ -109,7 +109,7 @@ public class RuntimeStateStreamConverter {
     /// <param name="dataConverter">>A data converter for serialization and deserialization</param>
     /// <returns></returns>
     public static async Task<OrchestrationRuntimeState> RawStreamToRuntimeState(
-        Stream rawSessionStream,
+        Stream? rawSessionStream,
         string sessionId,
         IOrchestrationServiceBlobStore orchestrationServiceBlobStore,
         DataConverter dataConverter) {
@@ -152,7 +152,6 @@ public class RuntimeStateStreamConverter {
         DataConverter dataConverter,
         out string blobKey) {
         OrchestrationRuntimeState runtimeState;
-        blobKey = string.Empty;
         if (stateStream is null) {
             TraceHelper.TraceSession(
                 TraceEventType.Information,
@@ -160,6 +159,7 @@ public class RuntimeStateStreamConverter {
                 sessionId,
                 "No session state exists, creating new session state.");
             runtimeState = new OrchestrationRuntimeState();
+            blobKey = string.Empty;
         } else {
             if (stateStream.Position != 0) {
                 throw TraceHelper.TraceExceptionSession(
