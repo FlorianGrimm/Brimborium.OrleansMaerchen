@@ -16,11 +16,15 @@ global using global::System.Runtime.ExceptionServices;
 global using global::System.Runtime.InteropServices;
 global using global::System.Runtime.Serialization;
 global using global::System.Text;
+global using global::System.Net;
 
 //global using global::Microsoft.Extensions.O;
 //global using global::Microsoft.Extensions.Logging;
 
 global using global::Microsoft.Extensions.Configuration;
+global using global::Microsoft.Extensions.DependencyInjection;
+
+global using global::Orleans.Configuration;
 global using global::Orleans.Extension.Clustering;
 
 //

@@ -1,14 +1,14 @@
 ﻿namespace Orleans.Extension.Clustering;
 
-public record ClusterForkFeedback(
+public record ClusteringConfigurationResult(
     int ExitCode,
     int ForkIndex,
     int ForkCount
     ) {
-    public static ClusterForkFeedback Empty()
+    public static ClusteringConfigurationResult Empty()
         => new(-1, 0, 0);
 
-    public static ClusterForkFeedback Exit(int exitCode)
+    public static ClusteringConfigurationResult Exit(int exitCode)
         => new(exitCode, 0, 0);
 
     public bool ShouldExit(out int exitCode) {
@@ -20,7 +20,7 @@ public record ClusterForkFeedback(
             return false;
         }
     }
-    public static ClusterForkFeedback Forked(int forkIndex, int forkCount)
+    public static ClusteringConfigurationResult Forked(int forkIndex, int forkCount)
         => new(-1, forkIndex, forkCount);
 
     public bool TryForked(out int forkIndex, out int forkCount) {

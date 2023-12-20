@@ -2,7 +2,6 @@
   "profiles": {
     "Brimborium.OrleansMaerchen.Channel.Sample": {
       "commandName": "Project",
-      "commandLineArgs": "--Orleans:Fork:Enable=true --Orleans:Fork:ForkIndex=0",
       "hotReloadEnabled": false
     }
   }

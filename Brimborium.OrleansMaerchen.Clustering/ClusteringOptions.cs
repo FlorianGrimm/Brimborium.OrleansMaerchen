@@ -9,7 +9,6 @@ public class ClusteringOptions {
 
     public const string ClusterModeLocalhostClustering = "Localhost";
 
-
     public ClusterForkOptions Fork { get; set; } = new();
 
     public ClusterEndpointOptions Endpoint { get; set; } = new();
@@ -128,26 +127,43 @@ public class ClusterEndpointOptions {
 
 public class CommonConnectionString {
     public string? Mode { get; set; }
+
+    // AdoNet
     public string? Invariant { get; set; }
     public string? ConnectionString { get; set; }
     public string? Server { get; set; }
     public string? Database { get; set; }
 
+    // InMemory
+    public int? NumStorageGrains { get; set; }
+
     public bool TryGetConnectionString(string name, [MaybeNullWhen(false)] out EffectiveConnectionString connectionString) {
+        if (string.Equals(this.Mode, SiloBuilderClusteringExtensions.ModeAdoNet, StringComparison.OrdinalIgnoreCase)) {
+            return this.TryGetConnectionStringAdoNet(name, out connectionString);
+        } else if (string.Equals(this.Mode, SiloBuilderClusteringExtensions.ModeInMemory, StringComparison.OrdinalIgnoreCase)) {
+            return this.TryGetConnectionStringInMemory(name, out connectionString);
+        } else {
+            return this.TryGetConnectionStringDefault(name, out connectionString);
+        }
+    }
+
+    public bool TryGetConnectionStringAdoNet(string name, [MaybeNullWhen(false)] out EffectiveConnectionString connectionString) {
         if (!string.IsNullOrEmpty(this.ConnectionString)) {
             connectionString = new EffectiveConnectionString(
                     name,
                     this.Mode,
                     this.Invariant,
-                    this.ConnectionString);
+                    this.ConnectionString,
+                    this.NumStorageGrains);
             return true;
         } else if (!string.IsNullOrEmpty(this.Server) && !string.IsNullOrEmpty(this.Database)) {
             connectionString = new EffectiveConnectionString(
                     name,
                     this.Mode,
                     this.Invariant,
-                    $"Data Source={this.Server};Initial Catalog={this.Database};Integrated Security=True;Pooling=False;Max Pool Size=200;MultipleActiveResultSets=True;TrustServerCertificate=True"
-                // Asynchronous Processing
+                    $"Data Source={this.Server};Initial Catalog={this.Database};Integrated Security=True;Pooling=False;Max Pool Size=200;MultipleActiveResultSets=True;TrustServerCertificate=True",
+                    // Asynchronous Processing
+                    this.NumStorageGrains
                 );
             return true;
         } else {
@@ -155,13 +171,37 @@ public class CommonConnectionString {
             return false;
         }
     }
+
+    public bool TryGetConnectionStringInMemory(string name, [MaybeNullWhen(false)] out EffectiveConnectionString connectionString) {
+        connectionString = new EffectiveConnectionString(
+                    name,
+                    this.Mode,
+                    this.Invariant,
+                    this.ConnectionString ?? string.Empty,
+                    this.NumStorageGrains
+                );
+        return true;
+    }
+
+    public bool TryGetConnectionStringDefault(string name, [MaybeNullWhen(false)] out EffectiveConnectionString connectionString) {
+        connectionString = new EffectiveConnectionString(
+                    name,
+                    this.Mode,
+                    this.Invariant,
+                    this.ConnectionString ?? string.Empty,
+                    this.NumStorageGrains
+                );
+        return true;
+    }
+
 }
 
 public record class EffectiveConnectionString(
     string? Name,
     string? Mode,
     string? Invariant,
-    string ConnectionString
+    string ConnectionString,
+    int? NumStorageGrains
     ) {
     public string? GetMode(string? defaultValue) {
         if (!string.IsNullOrEmpty(this.Mode)) {

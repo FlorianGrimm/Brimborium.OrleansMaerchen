@@ -1,53 +1,46 @@
-﻿using System;
-using System.Diagnostics;
-using System.Net;
+﻿namespace Orleans.Hosting;
 
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
-using Microsoft.Extensions.Options;
-
-using Orleans.Configuration;
-using Orleans.Configuration.Internal;
-using Orleans.Runtime;
-using Orleans.Runtime.MembershipService;
-
-using Orleans.Extension.Clustering;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Hosting;
-
-namespace Orleans.Hosting;
 public static class SiloBuilderClusteringExtensions {
     public const string ModeAdoNet = "AdoNet";
     public const string ModeLocalhost = "Localhost";
     public const string ModeInMemory = "InMemory";
-    
-    /*
-    public static async Task<ClusterForkFeedback> HandleDevelopmentFork(
-        Assembly assembly,
-        string[] args) {
-        */
+    // TODO: add Microsoft.Orleans.Clustering.AzureStorage
+    public const string ModeAzureStorage = "AzureStorage";
 
+    private static SiloBuilderClusteringHandlers? _Handlers;
+    public static SiloBuilderClusteringHandlers Handlers {
+        get => _Handlers ??= SiloBuilderClusteringHandlers.Create();
+        set => _Handlers = value;
+    }
 
-    public static ISiloBuilder UseOrleansByConfiguration(
+    public static ClusteringOptions UseOrleansByConfiguration(
         this ISiloBuilder siloBuilder,
         IConfiguration configurationRoot,
         string? sectionName = default,
-        ClusteringOptions? fallbackOptions = default) {
-        var config = GetClusteringOptions(configurationRoot, sectionName, fallbackOptions);
-        siloBuilder.ConfigureClusterOptions(config);
-        siloBuilder.UseClusteringByConfiguration(config);
-        siloBuilder.UseReminderServiceByConfiguration(config);
-        siloBuilder.UseDefaultGrainStorageByConfiguration(config);
+        ClusteringOptions? fallbackOptions = default,
+        SiloBuilderClusteringHandlers? handlers = default) {
+        var clusteringOptions = GetClusteringOptions(configurationRoot, sectionName, fallbackOptions);
+        return siloBuilder.UseOrleansByConfiguration(clusteringOptions, handlers);
+    }
+
+    public static ClusteringOptions UseOrleansByConfiguration(
+        this ISiloBuilder siloBuilder,
+        ClusteringOptions clusteringOptions,
+        SiloBuilderClusteringHandlers? handlers = default) {
+        handlers ??= Handlers;
+        siloBuilder.ConfigureClusterOptions(clusteringOptions, handlers);
+        siloBuilder.UseClusteringByConfiguration(clusteringOptions, handlers);
+        siloBuilder.UseReminderServiceByConfiguration(clusteringOptions, handlers);
+        siloBuilder.UseDefaultGrainStorageByConfiguration(clusteringOptions, handlers);
 
         // Microsoft.Orleans.Clustering.AzureStorage
         // "AdoNetClustering"
 
-        siloBuilder.ConfigureEndpointsByConfiguration(config);
-
-        return siloBuilder;
+        siloBuilder.ConfigureEndpointsByConfiguration(clusteringOptions, handlers);
+        return clusteringOptions;
     }
 
-    private static ClusteringOptions GetClusteringOptions(IConfiguration configurationRoot, string? sectionName, ClusteringOptions? fallbackOptions) {
+    public static ClusteringOptions GetClusteringOptions(IConfiguration configurationRoot, string? sectionName, ClusteringOptions? fallbackOptions) {
         var config = ClusteringOptions.Empty();
         if (string.Equals(sectionName, string.Empty, StringComparison.Ordinal)) {
             configurationRoot.Bind(config);
@@ -65,48 +58,53 @@ public static class SiloBuilderClusteringExtensions {
 
     // https://learn.microsoft.com/en-us/dotnet/orleans/host/configuration-guide/typical-configurations#unreliable-deployment-on-a-cluster-of-dedicated-servers
 
-    public static ISiloBuilder ConfigureClusterOptions(
+    public static bool ConfigureClusterOptions(
         this ISiloBuilder siloBuilder,
-        ClusteringOptions config) {
+        ClusteringOptions clusteringOptions,
+        SiloBuilderClusteringHandlers? handlers = default) {
+        handlers ??= Handlers;
         siloBuilder.Configure<ClusterOptions>(options => {
-            if (!string.IsNullOrEmpty(config.ClusterId)) {
-                options.ClusterId = config.ClusterId;
+            if (!string.IsNullOrEmpty(clusteringOptions.ClusterId)) {
+                options.ClusterId = clusteringOptions.ClusterId;
             }
-            if (!string.IsNullOrEmpty(config.ServiceId)) {
-                options.ServiceId = config.ServiceId;
+            if (!string.IsNullOrEmpty(clusteringOptions.ServiceId)) {
+                options.ServiceId = clusteringOptions.ServiceId;
             }
 
-            if (config.Fork.TryGetForked(out var forkIndex, out var forkCount)) {
+            if (clusteringOptions.Fork.TryGetForked(out var forkIndex, out var forkCount)) {
                 options.ServiceId = $"{options.ServiceId}{forkIndex}";
             }
         });
-        return siloBuilder;
+        return true;
     }
 
-    public static ISiloBuilder UseClusteringByConfiguration(
+    public static bool UseClusteringByConfiguration(
         this ISiloBuilder siloBuilder,
-        ClusteringOptions config) {
-        if (!config.TryGetConnectionStringClustering(out var effectiveConnectionString)) {
+        ClusteringOptions clusteringOptions,
+        SiloBuilderClusteringHandlers? handlers = default) {
+        handlers ??= Handlers;
+        if (!clusteringOptions.TryGetConnectionStringClustering(out var effectiveConnectionString)) {
             throw new InvalidOperationException("No ConnectionString for Clustering - 'ConnectionStringClustering'");
-        }
-        var mode = effectiveConnectionString.GetMode(ModeAdoNet);
-        if (string.Equals(mode, ModeAdoNet)) {
-            return siloBuilder.UseAdoNetClusteringByConfiguration(config);
+            //return false;
         }
 
-        if (string.Equals(mode, ModeLocalhost)) {
-            return siloBuilder.UseLocalhostClustering();
-        }
+        var mode = effectiveConnectionString.GetMode(string.Empty);
 
-        throw new InvalidOperationException("ClusterMode is unexpected. Known Localhost|AdoNet");
-        //return siloBuilder;
+        if (!string.IsNullOrEmpty(mode)
+            && handlers.UseClustering.TryGetValue(mode, out var handler)) {
+            return handler(siloBuilder, clusteringOptions);
+        } else {
+            //return false;
+            var keys = string.Join(" | ", handlers.UseClustering.Keys);
+            throw new InvalidOperationException($"ClusterMode is unexpected. Known {keys}");
+        }
     }
 
     // https://learn.microsoft.com/en-us/dotnet/orleans/host/configuration-guide/configuring-ado-dot-net-providers
-    public static ISiloBuilder UseAdoNetClusteringByConfiguration(
+    public static bool UseAdoNetClusteringByConfiguration(
         this ISiloBuilder siloBuilder,
-        ClusteringOptions config) {
-        if (!config.TryGetConnectionStringClustering(out var effectiveConnectionString)) {
+        ClusteringOptions clusteringOptions) {
+        if (!clusteringOptions.TryGetConnectionStringClustering(out var effectiveConnectionString)) {
             throw new InvalidOperationException("No ConnectionString for Clustering - 'ConnectionString:Clustering'");
         }
         var mode = effectiveConnectionString.GetMode(ModeAdoNet);
@@ -118,27 +116,37 @@ public static class SiloBuilderClusteringExtensions {
             options.Invariant = invariant;
             options.ConnectionString = effectiveConnectionString.ConnectionString;
         });
-        return siloBuilder;
+        return true;
     }
 
-    public static ISiloBuilder UseReminderServiceByConfiguration(
+    public static bool UseLocalhostClusteringByConfiguration(
         this ISiloBuilder siloBuilder,
-        ClusteringOptions config
-        ) {
-        if (!config.TryGetConnectionStringReminder(out var effectiveConnectionString)) {
-            return siloBuilder;
+        ClusteringOptions clusteringOptions) {
+        siloBuilder.UseLocalhostClustering();
+        return true;
+    }
+
+    public static bool UseReminderServiceByConfiguration(
+        this ISiloBuilder siloBuilder,
+        ClusteringOptions clusteringOptions,
+        SiloBuilderClusteringHandlers? handlers = default) {
+        handlers ??= Handlers;
+        if (!clusteringOptions.TryGetConnectionStringReminder(out var effectiveConnectionString)) {
+            return false;
         }
         var mode = effectiveConnectionString.GetMode(ModeAdoNet);
-        if (!string.Equals(mode, ModeAdoNet)) {
-            return siloBuilder.UseAdoNetReminderByConfiguration(config);
+        if (!string.IsNullOrEmpty(mode)
+            && handlers.UseReminder.TryGetValue(mode, out var handler)) {
+            return handler(siloBuilder, clusteringOptions);
+        } else {
+            return false;
         }
-        return siloBuilder;
     }
 
-    public static ISiloBuilder UseAdoNetReminderByConfiguration(
+    public static bool UseAdoNetReminderByConfiguration(
         this ISiloBuilder siloBuilder,
-        ClusteringOptions config) {
-        if (!config.TryGetConnectionStringReminder(out var effectiveConnectionString)) {
+        ClusteringOptions clusteringOptions) {
+        if (!clusteringOptions.TryGetConnectionStringReminder(out var effectiveConnectionString)) {
             throw new InvalidOperationException("No ConnectionString for Reminder");
         }
         var mode = effectiveConnectionString.GetMode(ModeAdoNet);
@@ -150,40 +158,57 @@ public static class SiloBuilderClusteringExtensions {
             options.Invariant = invariant;
             options.ConnectionString = effectiveConnectionString.ConnectionString;
         });
-        //siloBuilder.UseInMemoryReminderService
-        return siloBuilder;
+
+        return true;
     }
 
-    public static ISiloBuilder UseDefaultGrainStorageByConfiguration(
+    public static bool UseInMemoryReminderReminderByConfiguration(
         this ISiloBuilder siloBuilder,
-        ClusteringOptions config) {
-        if (!config.TryGetConnectionStringGrainStorage("Default", out var effectiveConnectionString)) {
-            return siloBuilder;
-        }
-        var mode = effectiveConnectionString.GetMode(ModeAdoNet);
-        if (string.Equals(mode, ModeAdoNet)) {
-            return siloBuilder.AddDefaultAdoNetGrainStorageByConfiguration(config);
-        }
-        return siloBuilder;
+        ClusteringOptions clusteringOptions) {
+        siloBuilder.UseInMemoryReminderService();
+        return true;
     }
 
-    public static ISiloBuilder AddNamedGrainStorageByConfiguration(
+    public static bool UseDefaultGrainStorageByConfiguration(
+        this ISiloBuilder siloBuilder,
+        ClusteringOptions clusteringOptions,
+        SiloBuilderClusteringHandlers? handlers = default) {
+        handlers ??= Handlers;
+        if (!clusteringOptions.TryGetConnectionStringGrainStorage("Default", out var effectiveConnectionString)) {
+            return false;
+        }
+        var mode = effectiveConnectionString.GetMode(string.Empty);
+
+        if (!string.IsNullOrEmpty(mode)
+            && handlers.UseDefaultGrainStorage.TryGetValue(mode, out var handler)) {
+            return handler(siloBuilder, clusteringOptions);
+        } else {
+            return false;
+        }
+    }
+
+    public static bool AddNamedGrainStorageByConfiguration(
         this ISiloBuilder siloBuilder,
         string name,
-        ClusteringOptions config) {
-        if (!config.TryGetConnectionStringGrainStorage(name, out var effectiveConnectionString)) {
-            return siloBuilder;
+        ClusteringOptions clusteringOptions,
+        SiloBuilderClusteringHandlers? handlers = default) {
+        handlers ??= Handlers;
+        if (!clusteringOptions.TryGetConnectionStringGrainStorage(name, out var effectiveConnectionString)) {
+            return false;
         }
-        var mode = effectiveConnectionString.GetMode(ModeAdoNet);
-        if (string.Equals(mode, ModeAdoNet)) {
-            return siloBuilder.AddNamedAdoNetGrainStorageByConfiguration(name, config);
+        var mode = effectiveConnectionString.GetMode(string.Empty);
+        if (!string.IsNullOrEmpty(mode)
+           && handlers.UseNamedGrainStorage.TryGetValue(mode, out var handler)) {
+            return handler(siloBuilder, name, clusteringOptions);
+        } else {
+            return false;
         }
-        return siloBuilder;
     }
-    public static ISiloBuilder AddDefaultAdoNetGrainStorageByConfiguration(
+
+    public static bool AddDefaultAdoNetGrainStorageByConfiguration(
         this ISiloBuilder siloBuilder,
-        ClusteringOptions config) {
-        if (!config.TryGetConnectionStringGrainStorage("Default", out var effectiveConnectionString)) {
+        ClusteringOptions clusteringOptions) {
+        if (!clusteringOptions.TryGetConnectionStringGrainStorage("Default", out var effectiveConnectionString)) {
             throw new InvalidOperationException("No ConnectionString for GrainStorage");
         }
         var mode = effectiveConnectionString.GetMode(ModeAdoNet);
@@ -195,14 +220,14 @@ public static class SiloBuilderClusteringExtensions {
             options.Invariant = invariant;
             options.ConnectionString = effectiveConnectionString.ConnectionString;
         });
-        return siloBuilder;
+        return true;
     }
 
-    public static ISiloBuilder AddNamedAdoNetGrainStorageByConfiguration(
+    public static bool AddNamedAdoNetGrainStorageByConfiguration(
         this ISiloBuilder siloBuilder,
         string name,
-        ClusteringOptions config) {
-        if (!config.TryGetConnectionStringGrainStorage(name, out var effectiveConnectionString)) {
+        ClusteringOptions clusteringOptions) {
+        if (!clusteringOptions.TryGetConnectionStringGrainStorage(name, out var effectiveConnectionString)) {
             throw new InvalidOperationException("No ConnectionString for GrainStorage");
         }
         var mode = effectiveConnectionString.GetMode(ModeAdoNet);
@@ -214,7 +239,47 @@ public static class SiloBuilderClusteringExtensions {
             options.Invariant = invariant;
             options.ConnectionString = effectiveConnectionString.ConnectionString;
         });
-        return siloBuilder;
+        return true;
+    }
+
+    public static bool AddDefaultMemoryGrainStorageByConfiguration(
+        this ISiloBuilder siloBuilder,
+        ClusteringOptions clusteringOptions) {
+        if (!clusteringOptions.TryGetConnectionStringGrainStorage("Default", out var effectiveConnectionString)) {
+            effectiveConnectionString = new EffectiveConnectionString("Default", ModeInMemory, default, string.Empty, default);
+        }
+        var mode = effectiveConnectionString.GetMode(ModeInMemory);
+        if (!string.Equals(mode, ModeInMemory)) {
+            throw new InvalidOperationException("ConnectionString for GrainStorage is not for InMemory");
+        }
+
+        siloBuilder.AddMemoryGrainStorageAsDefault(options => {
+            if (effectiveConnectionString.NumStorageGrains.HasValue) {
+                options.NumStorageGrains = effectiveConnectionString.NumStorageGrains.Value;
+            }
+        });
+        return true;
+    }
+
+    public static bool AddNamedMemoryGrainStorageByConfiguration(
+        this ISiloBuilder siloBuilder,
+        string name,
+        ClusteringOptions clusteringOptions) {
+        siloBuilder.AddMemoryGrainStorage(name);
+        if (!clusteringOptions.TryGetConnectionStringGrainStorage(name, out var effectiveConnectionString)) {
+            effectiveConnectionString = new EffectiveConnectionString(name, ModeInMemory, default, string.Empty, default);
+        }
+        var mode = effectiveConnectionString.GetMode(ModeInMemory);
+        if (!string.Equals(mode, ModeInMemory)) {
+            throw new InvalidOperationException("ConnectionString for GrainStorage is not for InMemory");
+        }
+
+        siloBuilder.AddMemoryGrainStorage(name, options => {
+            if (effectiveConnectionString.NumStorageGrains.HasValue) {
+                options.NumStorageGrains = effectiveConnectionString.NumStorageGrains.Value;
+            }
+        });
+        return true;
     }
 
 #if false
@@ -247,23 +312,25 @@ siloHostBuilder.AddAdoNetGrainStorage("GrainStorageForTest", options =>
 #endif
 
     public static ISiloBuilder ConfigureEndpointsByConfiguration(
-        this ISiloBuilder siloBuilder,
-        ClusteringOptions config) {
+    this ISiloBuilder siloBuilder,
+    ClusteringOptions clusteringOptions,
+    SiloBuilderClusteringHandlers? handlers = default) {
+        handlers ??= Handlers;
         siloBuilder.Configure<EndpointOptions>(options => {
 
-            bool forkEnabled = config.Fork.TryGetForked(out var forkIndex, out var forkCount);
-            if (config.Endpoint.AdvertisedIPAddress is not null) {
-                options.AdvertisedIPAddress = config.Endpoint.AdvertisedIPAddress;
+            bool forkEnabled = clusteringOptions.Fork.TryGetForked(out var forkIndex, out var forkCount);
+            if (clusteringOptions.Endpoint.AdvertisedIPAddress is not null) {
+                options.AdvertisedIPAddress = clusteringOptions.Endpoint.AdvertisedIPAddress;
             }
-            if (config.Endpoint.GatewayPort.HasValue) {
-                options.GatewayPort = config.Endpoint.GatewayPort.Value + forkIndex;
+            if (clusteringOptions.Endpoint.GatewayPort.HasValue) {
+                options.GatewayPort = clusteringOptions.Endpoint.GatewayPort.Value + forkIndex;
             } else {
                 if (forkEnabled) {
                     options.GatewayPort = Orleans.Configuration.EndpointOptions.DEFAULT_GATEWAY_PORT + forkIndex;
                 }
             }
-            if (config.Endpoint.GatewayListeningEndpoint is not null) {
-                options.GatewayListeningEndpoint = config.Endpoint.GatewayListeningEndpoint;
+            if (clusteringOptions.Endpoint.GatewayListeningEndpoint is not null) {
+                options.GatewayListeningEndpoint = clusteringOptions.Endpoint.GatewayListeningEndpoint;
             } else if (options.AdvertisedIPAddress is null
                 || options.AdvertisedIPAddress.Equals(IPAddress.Any)) {
                 options.GatewayListeningEndpoint = new IPEndPoint(IPAddress.Any, options.GatewayPort);
@@ -272,15 +339,15 @@ siloHostBuilder.AddAdoNetGrainStorage("GrainStorageForTest", options =>
                 options.GatewayListeningEndpoint = new IPEndPoint(IPAddress.IPv6Any, options.GatewayPort);
             }
 
-            if (config.Endpoint.SiloPort.HasValue) {
-                options.SiloPort = config.Endpoint.SiloPort.Value+forkIndex;
+            if (clusteringOptions.Endpoint.SiloPort.HasValue) {
+                options.SiloPort = clusteringOptions.Endpoint.SiloPort.Value + forkIndex;
             } else {
-                if (forkEnabled) { 
+                if (forkEnabled) {
                     options.SiloPort = Orleans.Configuration.EndpointOptions.DEFAULT_SILO_PORT + forkIndex;
                 }
             }
-            if (config.Endpoint.SiloListeningEndpoint is not null) {
-                options.SiloListeningEndpoint = config.Endpoint.SiloListeningEndpoint;
+            if (clusteringOptions.Endpoint.SiloListeningEndpoint is not null) {
+                options.SiloListeningEndpoint = clusteringOptions.Endpoint.SiloListeningEndpoint;
             } else if (options.AdvertisedIPAddress is null
                 || options.AdvertisedIPAddress.Equals(IPAddress.Any)) {
                 options.SiloListeningEndpoint = new IPEndPoint(IPAddress.Any, options.SiloPort);
