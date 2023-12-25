@@ -21,6 +21,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Security.Cryptography.X509Certificates;
+
 using Brimborium.OrleansAmqp.Framing;
 
 /// <summary>
@@ -73,17 +74,16 @@ using Brimborium.OrleansAmqp.Framing;
 /// LinkEndpoint, where subsequent send/receive requests will be routed.
 /// When none is found, the link is detached with error "amqp:not-found".
 /// </remarks>
-public class ContainerHost : IContainerHost
-{
-    private readonly string containerId;
-    private readonly Dictionary<string, TransportProvider> customTransports;
-    private readonly ConnectionListener[] listeners;
-    private readonly LinkCollection linkCollection;
-    private readonly ClosedCallback onLinkClosed;
-    private readonly Dictionary<string, MessageProcessor> messageProcessors;
-    private readonly Dictionary<string, RequestProcessor> requestProcessors;
-    private readonly Dictionary<string, MessageSource> messageSources;
-    private ILinkProcessor linkProcessor;
+public class ContainerHost : IContainerHost {
+    private readonly string _ContainerId;
+    private readonly Dictionary<string, TransportProvider> _CustomTransports;
+    private readonly ConnectionListener[] _Listeners;
+    private readonly LinkCollection _LinkCollection;
+    private readonly ClosedCallback _OnLinkClosed;
+    private readonly Dictionary<string, MessageProcessor> _MessageProcessors;
+    private readonly Dictionary<string, RequestProcessor> _RequestProcessors;
+    private readonly Dictionary<string, MessageSource> _MessageSources;
+    private ILinkProcessor _LinkProcessor;
 
     /// <summary>
     /// Initializes a container host object with multiple addresses.
@@ -94,8 +94,7 @@ public class ContainerHost : IContainerHost
     /// set on the listeners of the host after it is created.
     /// </remarks>
     public ContainerHost(IList<string> addressList)
-        : this(As(addressList, address => new Address(address)))
-    {
+        : this(As(addressList, address => new Address(address))) {
     }
 
     /// <summary>
@@ -105,8 +104,7 @@ public class ContainerHost : IContainerHost
     /// Supported schemes are "amqp", "amqps", "ws" and "wss".</param>
     [Obsolete("Use ContainerHost(Address) instead.")]
     public ContainerHost(Uri addressUri)
-        : this(new[] { new Address(addressUri.AbsoluteUri) })
-    {
+        : this(new[] { new Address(addressUri.AbsoluteUri) }) {
     }
 
     /// <summary>
@@ -118,12 +116,10 @@ public class ContainerHost : IContainerHost
     /// form "user:password" (parts are URL encoded).</param>
     [Obsolete("Use ContainerHost(IList<Address>, X509Certificate2) instead.")]
     public ContainerHost(IList<Uri> addressUriList, X509Certificate2 certificate, string userInfo)
-        : this(As(addressUriList, u => u.AbsoluteUri))
-    {
-        for (int i = 0; i < this.listeners.Length; i++)
-        {
-            this.listeners[i].SSL.Certificate = certificate;
-            this.listeners[i].SetUserInfo(userInfo);
+        : this(As(addressUriList, u => u.AbsoluteUri)) {
+        for (int i = 0; i < this._Listeners.Length; i++) {
+            this._Listeners[i].SSL.Certificate = certificate;
+            this._Listeners[i].SetUserInfo(userInfo);
         }
     }
 
@@ -131,28 +127,25 @@ public class ContainerHost : IContainerHost
     /// Initializes a container host object with one address.
     /// <param name="address">The address.</param>
     /// </summary>
-    public ContainerHost(Address address) : this(new[] { address })
-    {
+    public ContainerHost(Address address) : this(new[] { address }) {
     }
 
     /// <summary>
     /// Initializes a container host object with multiple addresses.
     /// <param name="addressList">The list of listen addresses.</param>
     /// </summary>
-    public ContainerHost(IList<Address> addressList)
-    {
-        this.containerId = Connection.MakeAmqpContainerId();
-        this.customTransports = new Dictionary<string, TransportProvider>(StringComparer.OrdinalIgnoreCase);
-        this.linkCollection = new LinkCollection(this.containerId);
-        this.onLinkClosed = this.OnLinkClosed;
-        this.messageProcessors = new Dictionary<string, MessageProcessor>(StringComparer.OrdinalIgnoreCase);
-        this.requestProcessors = new Dictionary<string, RequestProcessor>(StringComparer.OrdinalIgnoreCase);
-        this.messageSources = new Dictionary<string, MessageSource>(StringComparer.OrdinalIgnoreCase);
-        this.listeners = new ConnectionListener[addressList.Count];
-        for (int i = 0; i < addressList.Count; i++)
-        {
-            this.listeners[i] = new ConnectionListener(addressList[i], this);
-            this.listeners[i].AMQP.ContainerId = this.containerId;
+    public ContainerHost(IList<Address> addressList) {
+        this._ContainerId = Connection.MakeAmqpContainerId();
+        this._CustomTransports = new Dictionary<string, TransportProvider>(StringComparer.OrdinalIgnoreCase);
+        this._LinkCollection = new LinkCollection(this._ContainerId);
+        this._OnLinkClosed = this.OnLinkClosed;
+        this._MessageProcessors = new Dictionary<string, MessageProcessor>(StringComparer.OrdinalIgnoreCase);
+        this._RequestProcessors = new Dictionary<string, RequestProcessor>(StringComparer.OrdinalIgnoreCase);
+        this._MessageSources = new Dictionary<string, MessageSource>(StringComparer.OrdinalIgnoreCase);
+        this._Listeners = new ConnectionListener[addressList.Count];
+        for (int i = 0; i < addressList.Count; i++) {
+            this._Listeners[i] = new ConnectionListener(addressList[i], this);
+            this._Listeners[i].AMQP.ContainerId = this._ContainerId;
         }
     }
 
@@ -161,28 +154,24 @@ public class ContainerHost : IContainerHost
     /// <param name="addressList">The list of listen addresses.</param>
     /// <param name="certificate">The service certificate for TLS.</param>
     /// </summary>
-    public ContainerHost(IList<Address> addressList, X509Certificate2 certificate) : this(addressList)
-    {
-        for (int i = 0; i < this.listeners.Length; i++)
-        {
-            this.listeners[i].SSL.Certificate = certificate;
+    public ContainerHost(IList<Address> addressList, X509Certificate2 certificate) : this(addressList) {
+        for (int i = 0; i < this._Listeners.Length; i++) {
+            this._Listeners[i].SSL.Certificate = certificate;
         }
     }
 
     /// <summary>
     /// Gets the collection of custom transport providers. Key is the address scheme.
     /// </summary>
-    public IDictionary<string, TransportProvider> CustomTransports
-    {
-        get { return this.customTransports; }
+    public IDictionary<string, TransportProvider> CustomTransports {
+        get { return this._CustomTransports; }
     }
 
     /// <summary>
     /// Gets a list of connection listeners in this container.
     /// </summary>
-    public IList<ConnectionListener> Listeners
-    {
-        get { return this.listeners; }
+    public IList<ConnectionListener> Listeners {
+        get { return this._Listeners; }
     }
 
     /// <summary>
@@ -194,8 +183,7 @@ public class ContainerHost : IContainerHost
     /// returned, the host continues to search for registered processors that matches
     /// the address exactly in the attach.
     /// </remarks>
-    public Func<ContainerHost, Attach, string> AddressResolver
-    {
+    public Func<ContainerHost, Attach, string> AddressResolver {
         get;
         set;
     }
@@ -203,10 +191,8 @@ public class ContainerHost : IContainerHost
     /// <summary>
     /// Opens the container host object.
     /// </summary>
-    public void Open()
-    {
-        foreach (var listener in this.listeners)
-        {
+    public void Open() {
+        foreach (var listener in this._Listeners) {
             listener.Open();
         }
     }
@@ -214,16 +200,11 @@ public class ContainerHost : IContainerHost
     /// <summary>
     /// Closes the container host object.
     /// </summary>
-    public void Close()
-    {
-        foreach (var listener in this.listeners)
-        {
-            try
-            {
+    public void Close() {
+        foreach (var listener in this._Listeners) {
+            try {
                 listener.Close();
-            }
-            catch (Exception exception)
-            {
+            } catch (Exception exception) {
                 Trace.WriteLine(TraceLevel.Error, exception.ToString());
             }
         }
@@ -233,14 +214,12 @@ public class ContainerHost : IContainerHost
     /// Registers a link processor to handle received attach performatives.
     /// </summary>
     /// <param name="linkProcessor">The link processor to be registered.</param>
-    public void RegisterLinkProcessor(ILinkProcessor linkProcessor)
-    {
-        if (this.linkProcessor != null)
-        {
-            throw new AmqpException(ErrorCode.NotAllowed, this.linkProcessor.GetType().Name + " already registered");
+    public void RegisterLinkProcessor(ILinkProcessor linkProcessor) {
+        if (this._LinkProcessor != null) {
+            throw new AmqpException(ErrorCode.NotAllowed, this._LinkProcessor.GetType().Name + " already registered");
         }
 
-        this.linkProcessor = linkProcessor;
+        this._LinkProcessor = linkProcessor;
     }
 
     /// <summary>
@@ -249,10 +228,9 @@ public class ContainerHost : IContainerHost
     /// </summary>
     /// <param name="address">The address.</param>
     /// <param name="messageProcessor">The message processor to be registered.</param>
-    public void RegisterMessageProcessor(string address, IMessageProcessor messageProcessor)
-    {
-        ThrowIfExists(address, this.requestProcessors);
-        AddProcessor(this.messageProcessors, address, new MessageProcessor(messageProcessor));
+    public void RegisterMessageProcessor(string address, IMessageProcessor messageProcessor) {
+        ThrowIfExists(address, this._RequestProcessors);
+        AddProcessor(this._MessageProcessors, address, new MessageProcessor(messageProcessor));
     }
 
     /// <summary>
@@ -261,10 +239,9 @@ public class ContainerHost : IContainerHost
     /// </summary>
     /// <param name="address">The address.</param>
     /// <param name="messageSource">The message source to be registered.</param>
-    public void RegisterMessageSource(string address, IMessageSource messageSource)
-    {
-        ThrowIfExists(address, this.requestProcessors);
-        AddProcessor(this.messageSources, address, new MessageSource(messageSource));
+    public void RegisterMessageSource(string address, IMessageSource messageSource) {
+        ThrowIfExists(address, this._RequestProcessors);
+        AddProcessor(this._MessageSources, address, new MessageSource(messageSource));
     }
 
     /// <summary>
@@ -277,38 +254,34 @@ public class ContainerHost : IContainerHost
     /// source.address on the sending link should contain an unique address in the client
     /// and it should be specified in target.address on the receiving link.
     /// </remarks>
-    public void RegisterRequestProcessor(string address, IRequestProcessor requestProcessor)
-    {
-        ThrowIfExists(address, this.messageProcessors);
-        ThrowIfExists(address, this.messageSources);
-        AddProcessor(this.requestProcessors, address, new RequestProcessor(requestProcessor));
+    public void RegisterRequestProcessor(string address, IRequestProcessor requestProcessor) {
+        ThrowIfExists(address, this._MessageProcessors);
+        ThrowIfExists(address, this._MessageSources);
+        AddProcessor(this._RequestProcessors, address, new RequestProcessor(requestProcessor));
     }
 
     /// <summary>
     /// Unregisters a message processor at the specified address.
     /// </summary>
     /// <param name="address">The address.</param>
-    public void UnregisterMessageProcessor(string address)
-    {
-        RemoveProcessor(this.messageProcessors, address);
+    public void UnregisterMessageProcessor(string address) {
+        RemoveProcessor(this._MessageProcessors, address);
     }
 
     /// <summary>
     /// Unregisters a message source at the specified address.
     /// </summary>
     /// <param name="address">The address.</param>
-    public void UnregisterMessageSource(string address)
-    {
-        RemoveProcessor(this.messageSources, address);
+    public void UnregisterMessageSource(string address) {
+        RemoveProcessor(this._MessageSources, address);
     }
 
     /// <summary>
     /// Unregisters a request processor at the specified address.
     /// </summary>
     /// <param name="address">The address.</param>
-    public void UnregisterRequestProcessor(string address)
-    {
-        RemoveProcessor(this.requestProcessors, address);
+    public void UnregisterRequestProcessor(string address) {
+        RemoveProcessor(this._RequestProcessors, address);
     }
 
     /// <summary>
@@ -317,44 +290,34 @@ public class ContainerHost : IContainerHost
     /// <param name="linkProcessor">The link processor to unregister.</param>
     /// <remarks>If the linkProcessor was not registered or is different
     /// from the current registered one, an exception is thrown.</remarks>
-    public void UnregisterLinkProcessor(ILinkProcessor linkProcessor)
-    {
-        if (this.linkProcessor != linkProcessor)
-        {
+    public void UnregisterLinkProcessor(ILinkProcessor linkProcessor) {
+        if (this._LinkProcessor != linkProcessor) {
             throw new AmqpException(ErrorCode.NotAllowed, "The provided linkProcessor was not registered");
         }
 
-        this.linkProcessor = null;
+        this._LinkProcessor = null;
     }
 
-    private static IList<TOut> As<TIn, TOut>(IList<TIn> inList, Func<TIn, TOut> func)
-    {
+    private static IList<TOut> As<TIn, TOut>(IList<TIn> inList, Func<TIn, TOut> func) {
         TOut[] outList = new TOut[inList.Count];
-        for (int i = 0; i < outList.Length; i++)
-        {
+        for (int i = 0; i < outList.Length; i++) {
             outList[i] = func(inList[i]);
         }
 
         return outList;
     }
 
-    private static void ThrowIfExists<T>(string address, Dictionary<string, T> processors)
-    {
-        lock (processors)
-        {
-            if (processors.ContainsKey(address))
-            {
+    private static void ThrowIfExists<T>(string address, Dictionary<string, T> processors) {
+        lock (processors) {
+            if (processors.ContainsKey(address)) {
                 throw new AmqpException(ErrorCode.NotAllowed, typeof(T).Name + " processor has been registered at address " + address);
             }
         }
     }
 
-    private static void AddProcessor<T>(Dictionary<string, T> processors, string address, T processor)
-    {
-        lock (processors)
-        {
-            if (processors.ContainsKey(address))
-            {
+    private static void AddProcessor<T>(Dictionary<string, T> processors, string address, T processor) {
+        lock (processors) {
+            if (processors.ContainsKey(address)) {
                 throw new AmqpException(ErrorCode.NotAllowed, typeof(T).Name + " already registered");
             }
 
@@ -362,153 +325,120 @@ public class ContainerHost : IContainerHost
         }
     }
 
-    private static void RemoveProcessor<T>(Dictionary<string, T> processors, string address)
-    {
-        lock (processors)
-        {
+    private static void RemoveProcessor<T>(Dictionary<string, T> processors, string address) {
+        lock (processors) {
             T processor;
-            if (processors.TryGetValue(address, out processor))
-            {
+            if (processors.TryGetValue(address, out processor)) {
                 processors.Remove(address);
-                if (processor is IDisposable)
-                {
+                if (processor is IDisposable) {
                     ((IDisposable)processor).Dispose();
                 }
             }
         }
     }
 
-    private static bool TryGetProcessor<T>(Dictionary<string, T> processors, string address, out T processor)
-    {
-        lock (processors)
-        {
+    private static bool TryGetProcessor<T>(Dictionary<string, T> processors, string address, out T processor) {
+        lock (processors) {
             return processors.TryGetValue(address, out processor);
         }
     }
 
-    X509Certificate2 IContainer.ServiceCertificate
-    {
+    X509Certificate2 IContainer.ServiceCertificate {
         // listener should get it from SslSettings
         get { throw new InvalidOperationException(); }
     }
 
-    Message IContainer.CreateMessage(ByteBuffer buffer)
-    {
+    Message IContainer.CreateMessage(ByteBuffer buffer) {
         return Message.Decode(buffer);
     }
 
-    Link IContainer.CreateLink(ListenerConnection connection, ListenerSession session, Attach attach)
-    {
+    Link IContainer.CreateLink(ListenerConnection connection, ListenerSession session, Attach attach) {
         ListenerLink link = new ListenerLink(session, attach);
-        link.SafeAddClosed(this.onLinkClosed);
+        link.SafeAddClosed(this._OnLinkClosed);
         return link;
     }
 
-    bool IContainer.AttachLink(ListenerConnection connection, ListenerSession session, Link link, Attach attach)
-    {
+    bool IContainer.AttachLink(ListenerConnection connection, ListenerSession session, Link link, Attach attach) {
         var listenerLink = (ListenerLink)link;
-        if (!this.linkCollection.TryAdd(listenerLink))
-        {
+        if (!this._LinkCollection.TryAdd(listenerLink)) {
             throw new AmqpException(ErrorCode.Stolen, string.Format("Link '{0}' has been attached already.", attach.LinkName));
         }
 
         string address = null;
-        if (this.AddressResolver != null)
-        {
+        if (this.AddressResolver != null) {
             address = this.AddressResolver(this, attach);
         }
 
-        if (address == null)
-        {
+        if (address == null) {
             address = attach.Role ? ((Source)attach.Source).Address : ((Target)attach.Target).Address;
         }
 
-        if (address != null)
-        {
-            if (listenerLink.Role)
-            {
+        if (address != null) {
+            if (listenerLink.Role) {
                 MessageProcessor messageProcessor;
-                if (TryGetProcessor(this.messageProcessors, address, out messageProcessor))
-                {
+                if (TryGetProcessor(this._MessageProcessors, address, out messageProcessor)) {
                     messageProcessor.AddLink(listenerLink, address);
                     return true;
                 }
-            }
-            else
-            {
+            } else {
                 MessageSource messageSource;
-                if (TryGetProcessor(this.messageSources, address, out messageSource))
-                {
+                if (TryGetProcessor(this._MessageSources, address, out messageSource)) {
                     messageSource.AddLink(listenerLink, address);
                     return true;
                 }
             }
 
             RequestProcessor requestProcessor;
-            if (TryGetProcessor(this.requestProcessors, address, out requestProcessor))
-            {
+            if (TryGetProcessor(this._RequestProcessors, address, out requestProcessor)) {
                 requestProcessor.AddLink(listenerLink, address, attach);
                 return true;
             }
         }
 
-        if (this.linkProcessor != null)
-        {
-            this.linkProcessor.Process(new AttachContext(listenerLink, attach));
+        if (this._LinkProcessor != null) {
+            this._LinkProcessor.Process(new AttachContext(listenerLink, attach));
             return false;
         }
 
-        if (string.IsNullOrWhiteSpace(address))
-        {
+        if (string.IsNullOrWhiteSpace(address)) {
             throw new AmqpException(ErrorCode.InvalidField, "The address field cannot be empty.");
         }
 
         throw new AmqpException(ErrorCode.NotFound, "No processor was found at " + address);
     }
 
-    private void OnLinkClosed(IAmqpObject sender, Error error)
-    {
+    private void OnLinkClosed(IAmqpObject sender, Error error) {
         ListenerLink link = (ListenerLink)sender;
-        this.linkCollection.Remove(link);
+        this._LinkCollection.Remove(link);
     }
 
-    private abstract class Collection<T> : IDisposable
-    {
+    private abstract class Collection<T> : IDisposable {
         private readonly Dictionary<ListenerLink, T> collection;
 
-        protected Collection()
-        {
+        protected Collection() {
             this.collection = new Dictionary<ListenerLink, T>();
         }
 
-        public void Add(ListenerLink link, T instance)
-        {
+        public void Add(ListenerLink link, T instance) {
             link.SafeAddClosed(this.OnLinkClosed);
-            lock (this.collection)
-            {
+            lock (this.collection) {
                 this.collection.Add(link, instance);
             }
         }
 
-        private void OnLinkClosed(IAmqpObject sender, Error error)
-        {
+        private void OnLinkClosed(IAmqpObject sender, Error error) {
             ListenerLink link = (ListenerLink)sender;
-            lock (this.collection)
-            {
+            lock (this.collection) {
                 this.collection.Remove(link);
             }
         }
 
-        void IDisposable.Dispose()
-        {
+        void IDisposable.Dispose() {
             List<ListenerLink> links = new List<ListenerLink>();
-            lock (this.collection)
-            {
+            lock (this.collection) {
                 links.AddRange(this.collection.Keys);
-                foreach (var link in links)
-                {
-                    link.CloseInternal(0, new Error(ErrorCode.DetachForced)
-                    {
+                foreach (var link in links) {
+                    link.CloseInternal(0, new Error(ErrorCode.DetachForced) {
                         Description = "Source was unregistered."
                     });
                 }
@@ -518,128 +448,101 @@ public class ContainerHost : IContainerHost
         }
     }
 
-    private class MessageProcessor : Collection<TargetLinkEndpoint>
-    {
+    private class MessageProcessor : Collection<TargetLinkEndpoint> {
         private readonly IMessageProcessor messageProcessor;
 
         public MessageProcessor(IMessageProcessor messageProcessor)
-            : base()
-        {
+            : base() {
             this.messageProcessor = messageProcessor;
         }
 
-        public void AddLink(ListenerLink link, string address)
-        {
+        public void AddLink(ListenerLink link, string address) {
             TargetLinkEndpoint endpoint = new TargetLinkEndpoint(this.messageProcessor, link);
             link.InitializeLinkEndpoint(endpoint, (uint)this.messageProcessor.Credit);
             this.Add(link, endpoint);
         }
     }
 
-    private class MessageSource : Collection<SourceLinkEndpoint>
-    {
+    private class MessageSource : Collection<SourceLinkEndpoint> {
         private readonly IMessageSource messageSource;
 
         public MessageSource(IMessageSource messageSource)
-            : base()
-        {
+            : base() {
             this.messageSource = messageSource;
         }
 
-        public void AddLink(ListenerLink link, string address)
-        {
+        public void AddLink(ListenerLink link, string address) {
             SourceLinkEndpoint endpoint = new SourceLinkEndpoint(this.messageSource, link);
             link.InitializeLinkEndpoint(endpoint, 0);
             this.Add(link, endpoint);
         }
     }
 
-    private class RequestProcessor : IDisposable
-    {
+    private class RequestProcessor : IDisposable {
         private static readonly Action<ListenerLink, Message, DeliveryState, object> dispatchRequest = DispatchRequest;
         private readonly IRequestProcessor processor;
         private readonly List<ListenerLink> requestLinks;
         private readonly Dictionary<string, ListenerLink> responseLinks;
 
-        public RequestProcessor(IRequestProcessor processor)
-        {
+        public RequestProcessor(IRequestProcessor processor) {
             this.processor = processor;
             this.requestLinks = new List<ListenerLink>();
             this.responseLinks = new Dictionary<string, ListenerLink>(StringComparer.OrdinalIgnoreCase);
         }
 
-        public IRequestProcessor Processor
-        {
+        public IRequestProcessor Processor {
             get { return this.processor; }
         }
 
-        public IList<ListenerLink> Links
-        {
+        public IList<ListenerLink> Links {
             get { return this.requestLinks; }
         }
 
-        public void AddLink(ListenerLink link, string address, Attach attach)
-        {
-            if (!link.Role)
-            {
+        public void AddLink(ListenerLink link, string address, Attach attach) {
+            if (!link.Role) {
                 string replyTo = ((Target)attach.Target).Address;
                 AddProcessor(this.responseLinks, replyTo, link);
                 link.SettleOnSend = true;
                 link.InitializeSender((c, p, s) => { }, null, Tuple.Create(this, replyTo));
                 link.SafeAddClosed((s, e) => OnLinkClosed(s, e));
-            }
-            else
-            {
+            } else {
                 link.InitializeReceiver((uint)this.processor.Credit, dispatchRequest, this);
                 link.SafeAddClosed((s, e) => OnLinkClosed(s, e));
-                lock (this.requestLinks)
-                {
+                lock (this.requestLinks) {
                     this.requestLinks.Add(link);
                 }
             }
         }
 
-        private static void OnLinkClosed(IAmqpObject sender, Error error)
-        {
+        private static void OnLinkClosed(IAmqpObject sender, Error error) {
             ListenerLink link = (ListenerLink)sender;
-            if (!link.Role)
-            {
+            if (!link.Role) {
                 var tuple = (Tuple<RequestProcessor, string>)link.State;
                 RemoveProcessor(tuple.Item1.responseLinks, tuple.Item2);
-            }
-            else
-            {
+            } else {
                 var thisPtr = (RequestProcessor)link.State;
-                lock (thisPtr.requestLinks)
-                {
+                lock (thisPtr.requestLinks) {
                     thisPtr.requestLinks.Remove(link);
                 }
             }
         }
 
-        private static void DispatchRequest(ListenerLink link, Message message, DeliveryState deliveryState, object state)
-        {
+        private static void DispatchRequest(ListenerLink link, Message message, DeliveryState deliveryState, object state) {
             RequestProcessor thisPtr = (RequestProcessor)state;
 
             ListenerLink responseLink = null;
-            if (message.Properties != null && message.Properties.ReplyTo != null)
-            {
+            if (message.Properties != null && message.Properties.ReplyTo != null) {
                 thisPtr.responseLinks.TryGetValue(message.Properties.ReplyTo, out responseLink);
             }
 
             Outcome outcome;
-            if (responseLink == null)
-            {
-                outcome = new Rejected()
-                {
-                    Error = new Error(ErrorCode.NotFound)
-                    {
+            if (responseLink == null) {
+                outcome = new Rejected() {
+                    Error = new Error(ErrorCode.NotFound) {
                         Description = "Not response link was found. Ensure the link is attached or reply-to is set on the request."
                     }
                 };
-            }
-            else
-            {
+            } else {
                 outcome = new Accepted();
             }
 
@@ -649,23 +552,18 @@ public class ContainerHost : IContainerHost
             thisPtr.processor.Process(context);
         }
 
-        void IDisposable.Dispose()
-        {
+        void IDisposable.Dispose() {
             Error error = new Error(ErrorCode.DetachForced) { Description = "Processor was unregistered." };
-            lock (this.requestLinks)
-            {
-                for (int i = 0; i < this.requestLinks.Count; i++)
-                {
+            lock (this.requestLinks) {
+                for (int i = 0; i < this.requestLinks.Count; i++) {
                     this.requestLinks[i].CloseInternal(0, error);
                 }
 
                 this.requestLinks.Clear();
             }
 
-            lock (this.responseLinks)
-            {
-                foreach (var link in this.responseLinks.Values)
-                {
+            lock (this.responseLinks) {
+                foreach (var link in this.responseLinks.Values) {
                     link.CloseInternal(0, error);
                 }
 

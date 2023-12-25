@@ -66,9 +66,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Brimborium.OrleansMaerchen.
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Brimborium.OrleansMaerchen.Channel", "Brimborium.OrleansMaerchen.Channel\Brimborium.OrleansMaerchen.Channel.csproj", "{F11F4207-09D9-48C3-9A99-B4C55CD76035}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Brimborium.OrleansMaerchen.Channel.Sample", "Brimborium.OrleansMaerchen.Channel.Sample\Brimborium.OrleansMaerchen.Channel.Sample.csproj", "{6E5BB2B5-8223-4796-850E-1D80D186BD4F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Brimborium.OrleansMaerchen.Channel.Sample", "Brimborium.OrleansMaerchen.Channel.Sample\Brimborium.OrleansMaerchen.Channel.Sample.csproj", "{6E5BB2B5-8223-4796-850E-1D80D186BD4F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Brimborium.OrleansMaerchen.Clustering", "Brimborium.OrleansMaerchen.Clustering\Brimborium.OrleansMaerchen.Clustering.csproj", "{0943863C-EB58-41D3-80E0-5371BA476CD7}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Brimborium.OrleansMaerchen.Clustering", "Brimborium.OrleansMaerchen.Clustering\Brimborium.OrleansMaerchen.Clustering.csproj", "{0943863C-EB58-41D3-80E0-5371BA476CD7}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Brimborium.Orleans.AmqpNetLite.WebAmqpBroker", "Brimborium.Orleans.AmqpNetLite.WebAmqpBroker\Brimborium.Orleans.AmqpNetLite.WebAmqpBroker.csproj", "{88404BD4-5785-4BD6-8BC0-DE0CB2D0ECED}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -192,6 +194,10 @@ Global
 		{0943863C-EB58-41D3-80E0-5371BA476CD7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0943863C-EB58-41D3-80E0-5371BA476CD7}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{0943863C-EB58-41D3-80E0-5371BA476CD7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{88404BD4-5785-4BD6-8BC0-DE0CB2D0ECED}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{88404BD4-5785-4BD6-8BC0-DE0CB2D0ECED}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{88404BD4-5785-4BD6-8BC0-DE0CB2D0ECED}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{88404BD4-5785-4BD6-8BC0-DE0CB2D0ECED}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -17,28 +17,23 @@
 
 namespace Brimborium.OrleansAmqp.Serialization;
 
-internal sealed class SerializableMember
-{
-    public string Name
-    {
+internal sealed class SerializableMember {
+    public string Name {
         get;
         set;
     }
 
-    public int Order
-    {
+    public int Order {
         get;
         set;
     }
 
-    public MemberAccessor Accessor
-    {
+    public MemberAccessor Accessor {
         get;
         set;
     }
 
-    public SerializableType Type
-    {
+    public SerializableType Type {
         get;
         set;
     }

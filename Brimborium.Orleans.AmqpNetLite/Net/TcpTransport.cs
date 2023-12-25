@@ -17,7 +17,7 @@
 
 namespace Brimborium.OrleansAmqp;
 
-internal class TcpTransport : IAsyncTransport {
+public class TcpTransport : IAsyncTransport {
     private static readonly RemoteCertificateValidationCallback noneCertValidator = (a, b, c, d) => true;
     private readonly IBufferManager bufferManager;
     protected IAsyncTransport socketTransport;

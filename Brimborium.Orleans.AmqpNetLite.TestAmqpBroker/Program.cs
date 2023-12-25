@@ -1,9 +1,4 @@
-﻿
-using Brimborium.OrleansAmqp;
-using System;
-using System.Collections.Generic;
-
-namespace Brimborium.OrleansAmqp.TestBroker;
+﻿namespace Brimborium.OrleansAmqp.TestBroker;
 
 class Program {
     static void Usage() {
@@ -29,7 +24,7 @@ class Program {
     }
 
     static void Run(string[] args) {
-        List<string> endpoints = new List<string>();
+        List<string> endpoints = new ();
         string? creds = null;
         string? trace = null;
         string? sslValue = null;
@@ -84,7 +79,7 @@ class Program {
             Trace.TraceListener = (l, f, a) => Console.WriteLine(DateTime.Now.ToString("[hh:mm:ss.fff]") + " " + string.Format(f, a));
         }
 
-        var broker = new TestAmqpBroker(endpoints, creds, sslValue, queues);
+        var broker = new AmqpBroker(endpoints, creds, sslValue, queues);
         broker.Start();
 
         Console.WriteLine("Broker started. Press the enter key to exit...");

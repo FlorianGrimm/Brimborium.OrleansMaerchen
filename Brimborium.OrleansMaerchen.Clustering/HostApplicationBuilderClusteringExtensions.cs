@@ -82,7 +82,7 @@ public static class HostApplicationBuilderClusteringExtensions {
                     return ClusteringConfigurationResult.Exit(1);
                 }
                 var locationExe = System.IO.Path.ChangeExtension(locationDll, ".exe");
-                List<Process> processList = new List<Process>();
+                List<Process> processList = new ();
                 /*
                 System.Console.Out.WriteLine($"Forking {forkCount} times. Press enter to continue.");
                 System.Console.ReadLine();

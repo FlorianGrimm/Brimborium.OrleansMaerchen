@@ -17,8 +17,6 @@
 
 namespace Brimborium.OrleansAmqp.Serialization;
 
-using System;
-
 /// <summary>
 /// When applied to a method, specifies that the method is called after serialization
 /// of an object.

@@ -1,0 +1,6 @@
+@Brimborium.Orleans.AmqpNetLite.WebAmqpBroker_HostAddress = http://localhost:5294
+
+GET {{Brimborium.Orleans.AmqpNetLite.WebAmqpBroker_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

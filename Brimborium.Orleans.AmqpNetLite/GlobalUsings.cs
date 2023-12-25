@@ -14,6 +14,7 @@ global using System.Security.Authentication;
 global using System.Security.Cryptography.X509Certificates;
 global using System.Security.Principal;
 global using System.Reflection;
+global using System.Reflection.Emit;
 global using System.Transactions;
 global using System.Text;
 global using Orleans;
